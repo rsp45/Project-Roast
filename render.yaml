@@ -2,6 +2,7 @@ services:
   - type: web
     name: project-roast-api
     runtime: docker
+    plan: free
     rootDir: api
     dockerfilePath: ./Dockerfile
     healthCheckPath: /healthz
