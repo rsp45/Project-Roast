@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: project-roast-api
+    runtime: docker
+    rootDir: api
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_URL_SYNC
+        sync: false
+      - key: API_JWT_SECRET
+        sync: false
+      - key: API_JWT_TTL_SECONDS
+        value: "900"
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: WEB_ORIGIN
+        sync: false
