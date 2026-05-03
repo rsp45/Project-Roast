@@ -1,0 +1,16 @@
+.DS_Store
+
+web/node_modules/
+web/.next/
+web/.env.local
+web/tsconfig.tsbuildinfo
+
+api/.venv/
+api/.pytest_cache/
+api/.env
+api/src/*.egg-info/
+api/src/project_roast_api.egg-info/
+api/**/__pycache__/
+
+_repo/
+*.tgz
