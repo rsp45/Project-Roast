@@ -20,3 +20,6 @@ AI Trade Interrogator: a production-grade web app (Next.js) + analytics API (Fas
 3. `cd api && uv sync`
 4. `cd api && uv run alembic upgrade head`
 5. `cd api && uv run uvicorn project_roast_api.main:app --reload --host 0.0.0.0 --port 8000`
+
+## Deployment
+- Follow [DEPLOYMENT.md](file:///workspace/DEPLOYMENT.md)
