@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0b0d10;
+  --foreground: #f4f1ea;
+  --panel: #f4f1ea;
+  --panel-ink: #0b0d10;
+  --muted: #b7b2a8;
+  --accent: #d11f3a;
+  --border: color-mix(in oklab, var(--panel-ink) 12%, transparent);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-panel: var(--panel);
+  --color-panel-ink: var(--panel-ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-mono);
+  --font-display: var(--font-display);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --background: #f4f1ea;
+    --foreground: #0b0d10;
+    --panel: #ffffff;
+    --panel-ink: #0b0d10;
+    --muted: #5d5b55;
+    --accent: #d11f3a;
+    --border: color-mix(in oklab, var(--panel-ink) 12%, transparent);
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), ui-sans-serif, system-ui;
+}
