@@ -13,12 +13,12 @@ export default async function AppLayout({
 }) {
   const session = await getServerSession(getAuthOptions());
 
-  if (!session?.user?.email) {
+  if (!session) {
     redirect("/auth/sign-in");
   }
 
-  const userName = session.user.name ?? "Trader";
-  const userEmail = session.user.email;
+  const userName = session.user?.name ?? "Trader";
+  const userEmail = session.user?.email ?? "Signed in";
 
   return (
     <div className="flex min-h-dvh bg-background text-foreground">
