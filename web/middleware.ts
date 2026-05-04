@@ -6,10 +6,16 @@ export default withAuth({
     signIn: "/auth/sign-in",
   },
   callbacks: {
-    authorized: ({ token }) => !!token,
+    authorized: ({ req, token }) => {
+      const pathname = req.nextUrl.pathname;
+      if (pathname === "/" || pathname.startsWith("/auth")) {
+        return true;
+      }
+      return !!token;
+    },
   },
 });
 
 export const config = {
-  matcher: ["/app/:path*"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };
