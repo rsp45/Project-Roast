@@ -33,7 +33,21 @@ export async function GET() {
   });
 
   if (!res.ok) {
-    return NextResponse.json({ error: "Token exchange failed" }, { status: 502 });
+    let detail: unknown = null;
+    try {
+      detail = await res.json();
+    } catch {
+      try {
+        detail = await res.text();
+      } catch {
+        detail = null;
+      }
+    }
+
+    return NextResponse.json(
+      { error: "Token exchange failed", upstreamStatus: res.status, detail },
+      { status: 502 },
+    );
   }
 
   const data = (await res.json()) as { accessToken: string; expiresIn: number };
