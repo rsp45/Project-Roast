@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from google.auth.transport import requests as grequests
 from google.oauth2 import id_token as google_id_token
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from project_roast_api.config import settings
@@ -35,21 +36,30 @@ async def exchange(req: AuthExchangeRequest, db: AsyncSession = Depends(get_db))
 
     name = claims.get("name")
 
-    user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
-    if not user:
-        user = User(id=uuid.uuid4(), email=email, name=name, role="trader")
-        db.add(user)
-        await db.flush()
+    try:
+        user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+        if not user:
+            user = User(id=uuid.uuid4(), email=email, name=name, role="trader")
+            db.add(user)
+            await db.flush()
 
-    workspace = (
-        await db.execute(select(Workspace).where(Workspace.owner_user_id == user.id).limit(1))
-    ).scalar_one_or_none()
-    if not workspace:
-        workspace = Workspace(id=uuid.uuid4(), owner_user_id=user.id, base_currency="USD", timezone="UTC")
-        db.add(workspace)
-        await db.flush()
+        workspace = (
+            await db.execute(select(Workspace).where(Workspace.owner_user_id == user.id).limit(1))
+        ).scalar_one_or_none()
+        if not workspace:
+            workspace = Workspace(
+                id=uuid.uuid4(),
+                owner_user_id=user.id,
+                base_currency="USD",
+                timezone="UTC",
+            )
+            db.add(workspace)
+            await db.flush()
 
-    await db.commit()
+        await db.commit()
+    except SQLAlchemyError as e:
+        await db.rollback()
+        raise HTTPException(status_code=503, detail="Database unavailable") from e
 
     token = create_access_token(
         user_id=user.id,
