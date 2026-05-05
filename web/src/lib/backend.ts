@@ -13,14 +13,25 @@ export async function getBackendAccessToken() {
 
   const res = await fetch("/api/backend/token", { cache: "no-store" });
   if (!res.ok) {
-    throw new Error("Unable to fetch backend token");
+    let detail: unknown = null;
+    try {
+      detail = await res.json();
+    } catch {
+      try {
+        detail = await res.text();
+      } catch {
+        detail = null;
+      }
+    }
+
+    const suffix = detail
+      ? `: ${typeof detail === "string" ? detail : JSON.stringify(detail)}`
+      : "";
+    throw new Error(`Unable to fetch backend token (${res.status})${suffix}`);
   }
 
   const data = (await res.json()) as { accessToken: string; expiresIn: number };
-  cache = {
-    accessToken: data.accessToken,
-    expiresAtMs: now + data.expiresIn * 1000,
-  };
+  cache = { accessToken: data.accessToken, expiresAtMs: now + data.expiresIn * 1000 };
   return data.accessToken;
 }
 
