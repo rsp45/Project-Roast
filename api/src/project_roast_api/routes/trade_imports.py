@@ -9,7 +9,7 @@ from project_roast_api.db import get_db
 from project_roast_api.models import Trade, TradeImport
 from project_roast_api.schemas import TradeImportCreateResponse, TradeImportStatusResponse
 from project_roast_api.security import Principal, get_principal
-from project_roast_api.trade_ingest import parse_float, parse_timestamp, read_csv_dicts
+from project_roast_api.trade_ingest import parse_float, read_csv_dicts, resolve_timestamp
 
 router = APIRouter(prefix="/v1/trade-imports", tags=["trade-imports"])
 
@@ -47,17 +47,17 @@ async def create_trade_import(
     pnls: list[float] = []
 
     for row in rows:
+        # Normalise keys to lowercase so any capitalisation variant works
+        row = {k.lower(): v for k, v in row.items()}
         try:
-            executed_at = parse_timestamp(
-                row.get("executed_at") or row.get("executedAt") or row.get("time") or ""
-            )
+            executed_at = resolve_timestamp(row)
         except ValueError:
             continue
         symbol = (row.get("symbol") or "").strip().upper()
         side = (row.get("side") or row.get("action") or "").strip().upper()
         qty = parse_float(row.get("qty") or row.get("quantity"))
         price = parse_float(row.get("price"))
-        fees = parse_float(row.get("fees"), default=0.0)
+        fees = parse_float(row.get("fees") or row.get("fee") or row.get("commission"), default=0.0)
         pnl = row.get("pnl")
         pnl_value = parse_float(pnl, default=0.0) if pnl is not None and pnl.strip() != "" else None
         strategy_tag = (row.get("strategy_tag") or row.get("strategyTag") or "").strip() or None
