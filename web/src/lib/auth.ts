@@ -15,6 +15,10 @@ export function getAuthOptions(): NextAuthOptions {
     session: {
       strategy: "jwt",
     },
+    pages: {
+      signIn: "/auth/sign-in",
+      error: "/auth/sign-in",
+    },
     providers: [
       GoogleProvider({
         clientId: requireEnv("GOOGLE_CLIENT_ID"),
@@ -29,6 +33,15 @@ export function getAuthOptions(): NextAuthOptions {
       }),
     ],
     callbacks: {
+      async redirect({ url, baseUrl }) {
+        if (url.startsWith("/")) {
+          return `${baseUrl}${url}`;
+        }
+        if (url.startsWith(baseUrl)) {
+          return url;
+        }
+        return `${baseUrl}/app/portfolio`;
+      },
       async jwt({ token, account }) {
         if (account?.id_token) {
           token.idToken = account.id_token;
