@@ -21,6 +21,7 @@ def sanitize_async_database_url(database_url: str) -> str:
 
 engine: AsyncEngine = create_async_engine(
     sanitize_async_database_url(settings.database_url),
+    connect_args={"statement_cache_size": 0, "prepared_statement_cache_size": 0},
     pool_pre_ping=True,
 )
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
