@@ -34,8 +34,7 @@ def resolve_timestamp(row: dict[str, str]) -> datetime:
     """
     # ── 1. Combined column candidates ──────────────────────────────────────────
     combined_keys = (
-        "executed_at", "executedAt", "time", "datetime",
-        "timestamp", "date", "trade_date", "tradedate",
+        "executed_at", "executedat", "datetime", "timestamp",
     )
     for key in combined_keys:
         val = row.get(key, "").strip()
