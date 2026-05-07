@@ -19,6 +19,8 @@ export function TradesTable() {
     queryKey: ["trades"],
     queryFn: () => backendFetch<{ items: Trade[] }>("/v1/trades?limit=50"),
   });
+  const errorMessage =
+    q.error instanceof Error ? q.error.message : "Unable to load trades";
 
   return (
     <section className="rounded-2xl bg-panel p-5 text-panel-ink ring-1 ring-border">
@@ -28,7 +30,7 @@ export function TradesTable() {
           {q.isLoading
             ? "Loading..."
             : q.isError
-              ? "Error"
+              ? errorMessage
               : `${q.data?.items.length ?? 0} rows`}
         </div>
       </div>
@@ -46,6 +48,13 @@ export function TradesTable() {
             </tr>
           </thead>
           <tbody>
+            {q.isError ? (
+              <tr className="border-t border-panel-ink/10 bg-panel">
+                <td className="px-4 py-8 text-sm text-muted" colSpan={7}>
+                  {errorMessage}
+                </td>
+              </tr>
+            ) : null}
             {q.data?.items?.map((t) => (
               <tr key={t.id} className="border-t border-panel-ink/10 bg-panel">
                 <td className="px-4 py-3 font-mono text-xs">
@@ -82,7 +91,7 @@ export function TradesTable() {
                 </td>
               </tr>
             ))}
-            {!q.isLoading && (q.data?.items?.length ?? 0) === 0 ? (
+            {!q.isLoading && !q.isError && (q.data?.items?.length ?? 0) === 0 ? (
               <tr className="border-t border-panel-ink/10 bg-panel">
                 <td className="px-4 py-8 text-sm text-muted" colSpan={7}>
                   No trades yet. Upload a CSV to populate this table.

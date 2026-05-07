@@ -21,6 +21,17 @@ export function PortfolioMetrics() {
     queryFn: () => backendFetch<Metrics>("/v1/metrics/portfolio"),
   });
 
+  if (q.isError) {
+    const message =
+      q.error instanceof Error ? q.error.message : "Unable to load metrics";
+    return (
+      <section className="rounded-2xl bg-panel p-5 text-panel-ink ring-1 ring-border">
+        <div className="font-semibold">Portfolio metrics</div>
+        <div className="mt-2 text-sm text-muted">{message}</div>
+      </section>
+    );
+  }
+
   const k = q.data?.kpis;
 
   return (

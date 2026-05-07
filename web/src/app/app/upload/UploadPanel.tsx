@@ -3,9 +3,11 @@
 import { UploadCloud } from "lucide-react";
 import { useRef, useState } from "react";
 import { getBackendAccessToken } from "@/lib/backend";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function UploadPanel() {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const queryClient = useQueryClient();
   const [fileName, setFileName] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<
@@ -110,6 +112,10 @@ export function UploadPanel() {
             };
             setSummary(statusData.summary ?? null);
             setStatus("success");
+            await queryClient.invalidateQueries({ queryKey: ["trades"] });
+            await queryClient.invalidateQueries({
+              queryKey: ["metrics", "portfolio"],
+            });
           } catch (e) {
             setStatus("error");
             setMessage(e instanceof Error ? e.message : "Import failed");
