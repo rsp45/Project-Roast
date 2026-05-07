@@ -2,14 +2,14 @@ import { TradesTable } from "./TradesTable";
 
 export default function TradesPage() {
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <div className="flex flex-col w-full gap-stack-lg">
       <div>
-        <div className="font-[var(--font-display)] text-3xl tracking-tight">
-          Trades
-        </div>
-        <div className="mt-1 text-sm text-muted">
+        <h1 className="font-display-lg text-display-lg text-on-surface tracking-tight mb-2">
+          Interrogation Queue
+        </h1>
+        <p className="text-secondary font-body-md">
           Filter, group, and drill down into the raw events behind the curve.
-        </div>
+        </p>
       </div>
 
       <TradesTable />

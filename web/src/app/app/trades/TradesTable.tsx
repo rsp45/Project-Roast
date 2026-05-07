@@ -2,6 +2,7 @@
 
 import { backendFetch } from "@/lib/backend";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 type Trade = {
   id: string;
@@ -15,6 +16,7 @@ type Trade = {
 };
 
 export function TradesTable() {
+  const router = useRouter();
   const q = useQuery({
     queryKey: ["trades"],
     queryFn: () => backendFetch<{ items: Trade[] }>("/v1/trades?limit=50"),
@@ -23,10 +25,10 @@ export function TradesTable() {
     q.error instanceof Error ? q.error.message : "Unable to load trades";
 
   return (
-    <section className="rounded-2xl bg-panel p-5 text-panel-ink ring-1 ring-border">
-      <div className="flex items-baseline justify-between gap-4">
-        <div className="font-semibold">Recent trades</div>
-        <div className="text-xs text-muted">
+    <section className="glass-panel rounded-xl p-stack-md relative overflow-hidden group border border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+      <div className="flex justify-between items-center mb-stack-md z-10 relative">
+        <h2 className="font-headline-sm text-headline-sm text-on-surface">Recent trades</h2>
+        <div className="font-label-mono text-caption text-secondary">
           {q.isLoading
             ? "Loading..."
             : q.isError
@@ -34,10 +36,10 @@ export function TradesTable() {
               : `${q.data?.items.length ?? 0} rows`}
         </div>
       </div>
-      <div className="mt-4 overflow-hidden rounded-xl ring-1 ring-border">
+      <div className="mt-4 overflow-hidden rounded-lg border border-white/5 bg-surface-container-low/50">
         <table className="w-full text-left text-sm">
-          <thead className="bg-panel/60">
-            <tr className="text-[11px] font-semibold tracking-wide text-muted">
+          <thead className="border-b border-white/5">
+            <tr className="font-label-mono text-caption text-secondary uppercase tracking-wider">
               <th className="px-4 py-3">Time</th>
               <th className="px-4 py-3">Symbol</th>
               <th className="px-4 py-3">Side</th>
@@ -49,39 +51,43 @@ export function TradesTable() {
           </thead>
           <tbody>
             {q.isError ? (
-              <tr className="border-t border-panel-ink/10 bg-panel">
-                <td className="px-4 py-8 text-sm text-muted" colSpan={7}>
+              <tr className="border-b border-white/5 hover:bg-surface-container-high transition-colors">
+                <td className="px-4 py-8 text-sm text-error" colSpan={7}>
                   {errorMessage}
                 </td>
               </tr>
             ) : null}
             {q.data?.items?.map((t) => (
-              <tr key={t.id} className="border-t border-panel-ink/10 bg-panel">
-                <td className="px-4 py-3 font-mono text-xs">
+              <tr 
+                key={t.id} 
+                className="border-b border-white/5 hover:bg-surface-container-high transition-colors cursor-pointer"
+                onClick={() => router.push(`/app/trades/${t.id}`)}
+              >
+                <td className="px-4 py-3 font-mono text-xs text-secondary">
                   {new Date(t.executedAt).toLocaleString()}
                 </td>
-                <td className="px-4 py-3 font-semibold">{t.symbol}</td>
+                <td className="px-4 py-3 font-semibold text-on-surface">{t.symbol}</td>
                 <td className="px-4 py-3">
-                  <span className="rounded-full bg-panel-ink/10 px-2 py-1 text-[11px] font-semibold">
+                  <span className={`rounded px-2 py-1 text-[11px] font-mono border ${t.side.toUpperCase() === 'LONG' ? 'border-emerald-900/30 text-emerald-400 bg-emerald-900/10' : 'border-error-container/30 text-primary bg-error-container/10'}`}>
                     {t.side}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-right font-mono text-xs">
+                <td className="px-4 py-3 text-right font-mono text-xs text-on-surface-variant">
                   {t.qty}
                 </td>
-                <td className="px-4 py-3 text-right font-mono text-xs">
+                <td className="px-4 py-3 text-right font-mono text-xs text-on-surface-variant">
                   {t.price.toFixed(2)}
                 </td>
-                <td className="px-4 py-3 text-right font-mono text-xs">
+                <td className="px-4 py-3 text-right font-mono text-xs text-secondary">
                   {t.fees.toFixed(2)}
                 </td>
                 <td className="px-4 py-3 text-right font-mono text-xs font-semibold">
                   {t.pnl === null ? (
-                    <span className="text-muted">—</span>
+                    <span className="text-secondary">—</span>
                   ) : (
                     <span
                       className={
-                        t.pnl >= 0 ? "text-emerald-700" : "text-rose-700"
+                        t.pnl >= 0 ? "text-emerald-400" : "text-primary"
                       }
                     >
                       {t.pnl >= 0 ? "+" : ""}
@@ -92,8 +98,8 @@ export function TradesTable() {
               </tr>
             ))}
             {!q.isLoading && !q.isError && (q.data?.items?.length ?? 0) === 0 ? (
-              <tr className="border-t border-panel-ink/10 bg-panel">
-                <td className="px-4 py-8 text-sm text-muted" colSpan={7}>
+              <tr className="border-b border-white/5 hover:bg-surface-container-high transition-colors">
+                <td className="px-4 py-8 text-sm text-secondary text-center font-body-md" colSpan={7}>
                   No trades yet. Upload a CSV to populate this table.
                 </td>
               </tr>

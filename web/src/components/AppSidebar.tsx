@@ -1,71 +1,85 @@
 "use client";
 
-import {
-  BarChart3,
-  FlaskConical,
-  MessageSquareText,
-  Settings,
-  Table2,
-  Upload,
-} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { cn } from "@/lib/cn";
+import Image from "next/image";
 
 const navItems = [
-  { href: "/app/portfolio", label: "Portfolio", icon: BarChart3 },
-  { href: "/app/upload", label: "Upload", icon: Upload },
-  { href: "/app/trades", label: "Trades", icon: Table2 },
-  { href: "/app/ask", label: "Ask AI", icon: MessageSquareText },
-  { href: "/app/backtests", label: "Backtests", icon: FlaskConical },
-  { href: "/app/settings", label: "Settings", icon: Settings },
+  { href: "/app/portfolio", label: "Dashboard", icon: "analytics" },
+  { href: "/app/trades", label: "Trades", icon: "account_balance_wallet" },
+  { href: "/app/ask", label: "Interrogate", icon: "psychology" },
+  { href: "/app/upload", label: "Upload", icon: "upload" },
+  { href: "/app/backtests", label: "Backtests", icon: "flask" },
+  { href: "/app/settings", label: "Settings", icon: "settings" },
 ] as const;
 
-export function AppSidebar() {
+export function AppSidebar({ userName, userEmail }: { userName?: string; userEmail?: string }) {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-dvh w-[272px] shrink-0 flex-col border-r border-foreground/10 bg-background">
-      <div className="flex items-center gap-3 px-5 py-5">
-        <div className="font-[var(--font-display)] text-lg tracking-tight">
-          Project Roast
-        </div>
-        <div className="rounded-full bg-foreground/10 px-2 py-1 text-[10px] font-semibold tracking-wide text-muted">
-          v1
-        </div>
-      </div>
-      <nav className="flex flex-1 flex-col gap-1 px-3">
-        {navItems.map((item) => {
-          const isActive =
-            pathname === item.href || pathname?.startsWith(`${item.href}/`);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors",
-                isActive
-                  ? "bg-foreground text-background"
-                  : "text-foreground/85 hover:bg-foreground/10 hover:text-foreground",
-              )}
-            >
-              <Icon
-                className={cn(
-                  "h-4 w-4",
-                  isActive
-                    ? "text-background"
-                    : "text-foreground/70 group-hover:text-foreground",
-                )}
-              />
-              <span className="font-medium">{item.label}</span>
-            </Link>
-          );
-        })}
+    <>
+      {/* Top Navigation (Mobile) */}
+      <nav className="md:hidden fixed top-0 w-full z-50 bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-white/5 shadow-2xl flex justify-between items-center h-16 px-margin">
+        <div className="text-headline-sm font-headline-md font-bold text-primary dark:text-primary tracking-tighter">PROJECT ROAST</div>
+        <button className="text-primary dark:text-primary hover:text-primary transition-colors duration-200 active:opacity-80 transition-opacity">
+          <span className="material-symbols-outlined">menu</span>
+        </button>
       </nav>
-      <div className="px-5 py-5 text-xs text-muted">
-        Evidence-first analytics.
-      </div>
-    </aside>
+
+      {/* Side Navigation (Desktop) */}
+      <aside className="hidden md:flex flex-col h-full py-margin px-stack-md bg-surface-container-low border-r border-white/5 fixed left-0 top-0 w-[280px] z-40">
+        <div className="mb-stack-lg px-4">
+          <div className="font-headline-sm text-headline-sm text-primary mb-stack-sm tracking-tighter font-bold">PROJECT ROAST</div>
+          <div className="flex items-center gap-stack-sm mt-stack-md">
+            <div className="w-10 h-10 rounded-full bg-surface-variant overflow-hidden shrink-0 flex items-center justify-center">
+               <span className="material-symbols-outlined text-on-surface">person</span>
+            </div>
+            <div className="min-w-0">
+              <div className="font-body-md text-body-md text-on-surface font-semibold truncate">{userName || "The Interrogator"}</div>
+              <div className="font-caption text-caption text-primary flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-primary inline-block"></span> {userEmail || "AI Active"}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <nav className="flex-1 space-y-unit overflow-y-auto custom-scrollbar">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-stack-md rounded-xl px-4 py-3 active:scale-[0.98] transition-all duration-300",
+                  isActive
+                    ? "bg-primary-container text-on-primary-container font-medium"
+                    : "text-secondary hover:bg-surface-container-high"
+                )}
+              >
+                <span className="material-symbols-outlined">{item.icon}</span>
+                <span className="font-body-md text-body-md">{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="mt-auto pt-stack-lg space-y-unit border-t border-white/5 shrink-0">
+          <Link href="/app/upload" className="w-full flex justify-center bg-primary-container text-on-primary-container hover:bg-primary-container/90 transition-colors py-3 rounded-DEFAULT font-body-md text-body-md font-semibold mb-stack-md">
+            Upload CSV
+          </Link>
+          <button className="w-full flex items-center gap-stack-md text-secondary px-4 py-3 hover:bg-surface-container-high transition-all duration-300 rounded-xl">
+            <span className="material-symbols-outlined">help_outline</span>
+            <span className="font-body-md text-body-md">Help</span>
+          </button>
+          <button onClick={() => signOut({ callbackUrl: "/" })} className="w-full flex items-center gap-stack-md text-secondary px-4 py-3 hover:bg-surface-container-high transition-all duration-300 rounded-xl">
+            <span className="material-symbols-outlined">logout</span>
+            <span className="font-body-md text-body-md">Logout</span>
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }

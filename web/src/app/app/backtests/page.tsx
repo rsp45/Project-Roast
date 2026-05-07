@@ -13,33 +13,34 @@ const templates = [
 
 export default function BacktestsPage() {
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <div className="flex flex-col w-full gap-stack-lg">
       <div>
-        <div className="font-[var(--font-display)] text-3xl tracking-tight">
+        <h1 className="font-display-lg text-display-lg text-on-surface tracking-tight mb-2">
           Backtests
-        </div>
-        <div className="mt-1 text-sm text-muted">
+        </h1>
+        <p className="text-secondary font-body-md">
           Reproducible runs. Comparable results. No mystery settings.
-        </div>
+        </p>
       </div>
 
-      <section className="rounded-2xl bg-panel p-6 text-panel-ink ring-1 ring-border">
-        <div className="flex items-baseline justify-between gap-4">
-          <div className="font-semibold">Templates</div>
-          <div className="text-xs text-muted">Sample preview</div>
+      <section className="glass-panel rounded-xl p-stack-md relative overflow-hidden group border border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+        <div className="flex justify-between items-center mb-stack-md z-10 relative">
+          <h2 className="font-headline-sm text-headline-sm text-on-surface">Templates</h2>
+          <div className="font-label-mono text-caption text-secondary">Sample preview</div>
         </div>
-        <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+        
+        <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 relative z-10">
           {templates.map((t) => (
             <div
               key={t.id}
-              className="rounded-2xl bg-panel/60 p-5 ring-1 ring-border"
+              className="bg-surface-container-low/50 border border-white/5 rounded-xl p-stack-md hover:border-white/10 transition-colors"
             >
-              <div className="text-sm font-semibold">{t.name}</div>
-              <div className="mt-2 text-sm text-muted">{t.description}</div>
+              <div className="font-headline-sm text-[18px] text-on-surface">{t.name}</div>
+              <div className="mt-2 text-[14px] text-secondary font-body-md leading-relaxed">{t.description}</div>
               <button
                 type="button"
                 disabled
-                className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-xl bg-accent/40 text-sm font-semibold text-white/90"
+                className="mt-5 inline-flex h-10 w-full items-center justify-center rounded bg-surface border border-white/10 text-[14px] font-label-mono text-secondary transition-colors cursor-not-allowed opacity-50"
               >
                 Run (backend not wired yet)
               </button>

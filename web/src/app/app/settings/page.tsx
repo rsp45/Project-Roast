@@ -1,47 +1,47 @@
 export default function SettingsPage() {
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <div className="flex flex-col w-full gap-stack-lg">
       <div>
-        <div className="font-[var(--font-display)] text-3xl tracking-tight">
+        <h1 className="font-display-lg text-display-lg text-on-surface tracking-tight mb-2">
           Settings
-        </div>
-        <div className="mt-1 text-sm text-muted">
+        </h1>
+        <p className="text-secondary font-body-md">
           Workspace preferences and data conventions.
-        </div>
+        </p>
       </div>
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="rounded-2xl bg-panel p-6 text-panel-ink ring-1 ring-border">
-          <div className="text-sm font-semibold">Workspace</div>
-          <div className="mt-2 text-sm text-muted">
+      <section className="grid grid-cols-1 gap-gutter md:grid-cols-2">
+        <div className="glass-panel rounded-xl p-stack-md relative overflow-hidden border border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+          <div className="font-headline-sm text-[18px] text-on-surface mb-1">Workspace</div>
+          <div className="text-[14px] text-secondary font-body-md mb-stack-md">
             Timezone, base currency, and retention policy.
           </div>
-          <div className="mt-5 space-y-3">
-            <div className="rounded-xl bg-panel/60 p-4 ring-1 ring-border">
-              <div className="text-[11px] font-semibold tracking-wide text-muted">
+          <div className="space-y-3">
+            <div className="bg-surface-container-low/50 border border-white/5 rounded p-4">
+              <div className="font-label-mono text-[11px] font-semibold tracking-wide text-secondary uppercase mb-1">
                 Timezone
               </div>
-              <div className="mt-2 font-mono text-sm">UTC</div>
+              <div className="font-label-mono text-[14px] text-on-surface">UTC</div>
             </div>
-            <div className="rounded-xl bg-panel/60 p-4 ring-1 ring-border">
-              <div className="text-[11px] font-semibold tracking-wide text-muted">
+            <div className="bg-surface-container-low/50 border border-white/5 rounded p-4">
+              <div className="font-label-mono text-[11px] font-semibold tracking-wide text-secondary uppercase mb-1">
                 Base currency
               </div>
-              <div className="mt-2 font-mono text-sm">USD</div>
+              <div className="font-label-mono text-[14px] text-on-surface">USD</div>
             </div>
           </div>
         </div>
 
-        <div className="rounded-2xl bg-panel p-6 text-panel-ink ring-1 ring-border">
-          <div className="text-sm font-semibold">CSV Templates</div>
-          <div className="mt-2 text-sm text-muted">
+        <div className="glass-panel rounded-xl p-stack-md relative overflow-hidden border border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col">
+          <div className="font-headline-sm text-[18px] text-on-surface mb-1">CSV Templates</div>
+          <div className="text-[14px] text-secondary font-body-md mb-stack-md">
             Define column mappings once, reuse across imports.
           </div>
-          <div className="mt-5 rounded-xl bg-panel/60 p-4 ring-1 ring-border">
-            <div className="text-[11px] font-semibold tracking-wide text-muted">
+          <div className="mt-auto bg-surface-container-low/50 border border-white/5 rounded p-4">
+            <div className="font-label-mono text-[11px] font-semibold tracking-wide text-primary uppercase mb-2">
               Coming next
             </div>
-            <div className="mt-2 text-sm">
+            <div className="font-body-md text-[14px] text-on-surface-variant">
               Upload a sample CSV and save a mapping preset.
             </div>
           </div>
