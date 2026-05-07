@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200");
 
 @theme inline {
   --color-background: #131313;
@@ -31,13 +32,13 @@
   --color-error-container: #93000a;
   --color-on-error-container: #ffdad6;
 
-  --font-headline-md: "IBM Plex Sans", sans-serif;
-  --font-headline-sm: "IBM Plex Sans", sans-serif;
-  --font-display-lg: "IBM Plex Sans", sans-serif;
-  --font-body-lg: "Inter", sans-serif;
-  --font-body-md: "Inter", sans-serif;
-  --font-label-mono: "JetBrains Mono", monospace;
-  --font-caption: "Inter", sans-serif;
+  --font-headline-md: var(--font-body), sans-serif;
+  --font-headline-sm: var(--font-body), sans-serif;
+  --font-display-lg: var(--font-display), serif;
+  --font-body-lg: var(--font-body), sans-serif;
+  --font-body-md: var(--font-body), sans-serif;
+  --font-label-mono: var(--font-mono), monospace;
+  --font-caption: var(--font-body), sans-serif;
 
   --spacing-unit: 4px;
   --spacing-gutter: 24px;
