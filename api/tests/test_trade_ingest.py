@@ -2,7 +2,14 @@ from datetime import UTC, datetime
 
 import pytest
 
-from project_roast_api.trade_ingest import auto_map_row, build_column_mapping, parse_float, parse_timestamp, read_csv_dicts
+from project_roast_api.trade_ingest import (
+    auto_map_row,
+    build_column_mapping,
+    parse_float,
+    parse_timestamp,
+    preview_trade_import,
+    read_csv_dicts,
+)
 
 
 def test_parse_timestamp_iso():
@@ -47,3 +54,22 @@ def test_auto_map_row_handles_aliases_and_missing_pnl():
 
 def test_parse_float_invalid_defaults():
     assert parse_float("not-a-number", default=0.0) == 0.0
+
+
+def test_preview_trade_import_suggests_mapping_and_samples():
+    data = preview_trade_import(
+        b"Ticker, Avg Price ,Quantity,Buy/Sell,Execution Time\nAAPL,100,2,BUY,2026-05-02 10:11\n"
+    )
+    assert data["headers"] == ["ticker", "avg_price", "quantity", "buy_sell", "execution_time"]
+    assert data["suggestedMapping"]["symbol"] == "ticker"
+    assert data["suggestedMapping"]["price"] == "avg_price"
+    assert data["suggestedMapping"]["qty"] == "quantity"
+    assert data["suggestedMapping"]["side"] == "buy_sell"
+    assert data["requiredMissing"] == []
+    assert data["sampleRows"][0]["ticker"] == "AAPL"
+    assert any("pnl" in note.lower() for note in data["notes"])
+
+
+def test_preview_trade_import_detects_missing_timestamp():
+    data = preview_trade_import(b"Symbol,Side,Qty,Price\nAAPL,BUY,1,100\n")
+    assert "date" in data["requiredMissing"]

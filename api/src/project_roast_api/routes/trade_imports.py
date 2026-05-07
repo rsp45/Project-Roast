@@ -1,3 +1,4 @@
+import json
 import uuid
 from collections import Counter
 
@@ -7,11 +8,35 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from project_roast_api.db import get_db
 from project_roast_api.models import Trade, TradeImport
-from project_roast_api.schemas import TradeImportCreateResponse, TradeImportStatusResponse
+from project_roast_api.schemas import (
+    TradeImportCreateResponse,
+    TradeImportPreviewResponse,
+    TradeImportStatusResponse,
+)
 from project_roast_api.security import Principal, get_principal
-from project_roast_api.trade_ingest import auto_map_row, build_column_mapping, parse_float, read_csv_dicts, resolve_timestamp
+from project_roast_api.trade_ingest import (
+    auto_map_row,
+    build_column_mapping,
+    normalize_header,
+    parse_float,
+    preview_trade_import,
+    read_csv_dicts,
+    resolve_timestamp,
+)
 
 router = APIRouter(prefix="/v1/trade-imports", tags=["trade-imports"])
+
+
+@router.post("/preview", response_model=TradeImportPreviewResponse)
+async def preview_import(
+    file: UploadFile = File(...),
+    _principal: Principal = Depends(get_principal),
+):
+    if not file.filename or not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Only .csv files are supported")
+
+    raw = await file.read()
+    return preview_trade_import(raw)
 
 
 @router.post("", response_model=TradeImportCreateResponse)
@@ -19,6 +44,7 @@ async def create_trade_import(
     file: UploadFile = File(...),
     timezone: str = Form("UTC"),
     currency: str = Form("USD"),
+    mapping: str | None = Form(default=None),
     db: AsyncSession = Depends(get_db),
     principal: Principal = Depends(get_principal),
 ):
@@ -30,10 +56,40 @@ async def create_trade_import(
     if not rows:
         raise HTTPException(status_code=400, detail="CSV is empty")
 
-    mapping = build_column_mapping(list(rows[0].keys()))
+    headers = list(rows[0].keys())
+    active_mapping = build_column_mapping(headers)
+
+    if mapping:
+        try:
+            override = json.loads(mapping)
+        except json.JSONDecodeError as e:
+            raise HTTPException(status_code=400, detail="Invalid mapping JSON") from e
+
+        if not isinstance(override, dict):
+            raise HTTPException(status_code=400, detail="Invalid mapping JSON")
+
+        unknown: list[str] = []
+        for canonical, source in override.items():
+            if not isinstance(canonical, str) or not isinstance(source, str):
+                continue
+            canonical = canonical.strip()
+            source = normalize_header(source)
+            if not canonical or not source:
+                continue
+            if source not in headers:
+                unknown.append(f"{canonical}={source}")
+                continue
+            active_mapping[canonical] = source
+
+        if unknown:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Mapping references unknown headers: {', '.join(sorted(unknown))}",
+            )
+
     missing: list[str] = []
     for required in ("symbol", "side", "qty", "price"):
-        if not mapping.get(required):
+        if not active_mapping.get(required):
             missing.append(required)
     timestamp_headers = {
         "executed_at",
@@ -47,10 +103,10 @@ async def create_trade_import(
         "trade_date",
         "tradedate",
     }
-    if not any(h in rows[0] for h in timestamp_headers):
+    if not any(h in headers for h in timestamp_headers) and not active_mapping.get("executed_at"):
         missing.append("date")
     if missing:
-        found = ", ".join(sorted(rows[0].keys()))
+        found = ", ".join(sorted(headers))
         raise HTTPException(
             status_code=400,
             detail=f"CSV missing required columns: {', '.join(sorted(set(missing)))}. Found: {found}",
@@ -63,7 +119,7 @@ async def create_trade_import(
         status="running",
         source="csv",
         original_filename=file.filename,
-        mapping={"timezone": timezone, "currency": currency},
+        mapping={"timezone": timezone, "currency": currency, "columns": active_mapping},
     )
     db.add(trade_import)
     await db.flush()
@@ -73,8 +129,8 @@ async def create_trade_import(
     pnls: list[float] = []
 
     for row in rows:
-        raw_row = {k.lower(): v for k, v in row.items()}
-        mapped_row = auto_map_row(raw_row, mapping)
+        raw_row = row
+        mapped_row = auto_map_row(raw_row, active_mapping)
         row_for_timestamp = {**raw_row, **mapped_row}
         try:
             executed_at = resolve_timestamp(row_for_timestamp)

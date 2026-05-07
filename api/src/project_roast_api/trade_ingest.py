@@ -37,6 +37,22 @@ _COLUMN_ALIASES: dict[str, tuple[str, ...]] = {
     "strategy_tag": ("strategy_tag", "strategytag", "strategy", "tag", "setup"),
 }
 
+_REQUIRED_CANONICAL_FIELDS: tuple[str, ...] = ("symbol", "side", "qty", "price")
+_TIMESTAMP_HEADER_KEYS: frozenset[str] = frozenset(
+    {
+        "executed_at",
+        "executedat",
+        "execution_time",
+        "executiontime",
+        "timestamp",
+        "datetime",
+        "date",
+        "time",
+        "trade_date",
+        "tradedate",
+    }
+)
+
 
 def build_column_mapping(headers: list[str]) -> dict[str, str | None]:
     normalized = [normalize_header(h) for h in headers]
@@ -61,6 +77,45 @@ def auto_map_row(row: dict[str, str], mapping: dict[str, str | None]) -> dict[st
     if "fees" not in out or out["fees"].strip() == "":
         out["fees"] = "0"
     return out
+
+
+def preview_trade_import(content: bytes, *, sample_limit: int = 25) -> dict:
+    rows = read_csv_dicts(content)
+    if not rows:
+        return {
+            "headers": [],
+            "suggestedMapping": {},
+            "requiredMissing": ["symbol", "side", "qty", "price", "date"],
+            "sampleRows": [],
+            "notes": ["CSV is empty"],
+        }
+
+    headers = list(rows[0].keys())
+    mapping = build_column_mapping(headers)
+
+    missing: list[str] = []
+    for required in _REQUIRED_CANONICAL_FIELDS:
+        if not mapping.get(required):
+            missing.append(required)
+
+    has_timestamp = any(h in _TIMESTAMP_HEADER_KEYS for h in headers) or bool(mapping.get("executed_at"))
+    if not has_timestamp:
+        missing.append("date")
+
+    notes: list[str] = []
+    if not mapping.get("pnl"):
+        notes.append("PnL column missing; defaulting pnl to 0")
+    if not mapping.get("fees"):
+        notes.append("Fees column missing; defaulting fees to 0")
+
+    return {
+        "headers": headers,
+        "suggestedMapping": mapping,
+        "requiredMissing": sorted(set(missing)),
+        "sampleRows": rows[:sample_limit],
+        "notes": notes,
+    }
+
 
 
 def parse_timestamp(value: str) -> datetime:

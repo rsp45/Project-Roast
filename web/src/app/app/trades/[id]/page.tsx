@@ -121,7 +121,7 @@ export default function TradeDetailPage({
               <div className="flex items-center gap-2 mb-1">
                 <Brain className="h-5 w-5 text-primary-container" />
                 <h2 className="font-headline-sm text-[20px] font-semibold text-on-surface tracking-tight">
-                  The Interrogator's Verdict
+                  The Interrogator&apos;s Verdict
                 </h2>
               </div>
               <p className="font-body-md text-[14px] text-secondary">

@@ -30,6 +30,14 @@ class TradeImportStatusResponse(BaseModel):
     error: str | None = None
 
 
+class TradeImportPreviewResponse(BaseModel):
+    headers: list[str]
+    suggested_mapping: dict[str, str | None] = Field(alias="suggestedMapping")
+    required_missing: list[str] = Field(alias="requiredMissing")
+    sample_rows: list[dict[str, str]] = Field(alias="sampleRows")
+    notes: list[str]
+
+
 class TradeOut(BaseModel):
     id: uuid.UUID
     executed_at: datetime = Field(alias="executedAt")

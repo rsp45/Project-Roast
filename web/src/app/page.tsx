@@ -137,7 +137,7 @@ export default function Home() {
                 Surgical Dissection
               </h3>
               <p className="font-body-md text-body-md text-secondary relative z-10 max-w-md">
-                The Interrogator AI doesn't just show charts; it tears apart
+                The Interrogator AI doesn&apos;t just show charts; it tears apart
                 your trading logic, identifying cognitive biases and statistical
                 anomalies with zero empathy.
               </p>
