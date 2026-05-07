@@ -9,7 +9,7 @@ from project_roast_api.db import get_db
 from project_roast_api.models import Trade, TradeImport
 from project_roast_api.schemas import TradeImportCreateResponse, TradeImportStatusResponse
 from project_roast_api.security import Principal, get_principal
-from project_roast_api.trade_ingest import parse_float, read_csv_dicts, resolve_timestamp
+from project_roast_api.trade_ingest import auto_map_row, build_column_mapping, parse_float, read_csv_dicts, resolve_timestamp
 
 router = APIRouter(prefix="/v1/trade-imports", tags=["trade-imports"])
 
@@ -30,6 +30,32 @@ async def create_trade_import(
     if not rows:
         raise HTTPException(status_code=400, detail="CSV is empty")
 
+    mapping = build_column_mapping(list(rows[0].keys()))
+    missing: list[str] = []
+    for required in ("symbol", "side", "qty", "price"):
+        if not mapping.get(required):
+            missing.append(required)
+    timestamp_headers = {
+        "executed_at",
+        "executedat",
+        "execution_time",
+        "executiontime",
+        "datetime",
+        "timestamp",
+        "date",
+        "time",
+        "trade_date",
+        "tradedate",
+    }
+    if not any(h in rows[0] for h in timestamp_headers):
+        missing.append("date")
+    if missing:
+        found = ", ".join(sorted(rows[0].keys()))
+        raise HTTPException(
+            status_code=400,
+            detail=f"CSV missing required columns: {', '.join(sorted(set(missing)))}. Found: {found}",
+        )
+
     import_id = uuid.uuid4()
     trade_import = TradeImport(
         id=import_id,
@@ -47,20 +73,20 @@ async def create_trade_import(
     pnls: list[float] = []
 
     for row in rows:
-        # Normalise keys to lowercase so any capitalisation variant works
-        row = {k.lower(): v for k, v in row.items()}
+        raw_row = {k.lower(): v for k, v in row.items()}
+        mapped_row = auto_map_row(raw_row, mapping)
+        row_for_timestamp = {**raw_row, **mapped_row}
         try:
-            executed_at = resolve_timestamp(row)
+            executed_at = resolve_timestamp(row_for_timestamp)
         except ValueError:
             continue
-        symbol = (row.get("symbol") or "").strip().upper()
-        side = (row.get("side") or row.get("action") or "").strip().upper()
-        qty = parse_float(row.get("qty") or row.get("quantity"))
-        price = parse_float(row.get("price"))
-        fees = parse_float(row.get("fees") or row.get("fee") or row.get("commission"), default=0.0)
-        pnl = row.get("pnl")
-        pnl_value = parse_float(pnl, default=0.0) if pnl is not None and pnl.strip() != "" else None
-        strategy_tag = (row.get("strategy_tag") or row.get("strategyTag") or "").strip() or None
+        symbol = (mapped_row.get("symbol") or "").strip().upper()
+        side = (mapped_row.get("side") or "").strip().upper()
+        qty = parse_float(mapped_row.get("qty"))
+        price = parse_float(mapped_row.get("price"))
+        fees = parse_float(mapped_row.get("fees"), default=0.0)
+        pnl_value = parse_float(mapped_row.get("pnl"), default=0.0)
+        strategy_tag = (mapped_row.get("strategy_tag") or "").strip() or None
 
         if not symbol or not side or qty == 0 or price == 0:
             continue
@@ -76,12 +102,11 @@ async def create_trade_import(
             fees=fees,
             pnl=pnl_value,
             strategy_tag=strategy_tag,
-            raw=row,
+            raw=raw_row,
         )
         trades.append(t)
         symbols.append(symbol)
-        if pnl_value is not None:
-            pnls.append(float(pnl_value))
+        pnls.append(float(pnl_value))
 
     if not trades:
         trade_import.status = "failed"
