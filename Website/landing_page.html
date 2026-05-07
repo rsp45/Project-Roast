@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Project Roast - Interrogate Your Trades</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&amp;family=Inter:wght@400;500&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error-container": "#93000a",
+                        "surface-variant": "#353534",
+                        "surface-container-low": "#1c1b1b",
+                        "on-error-container": "#ffdad6",
+                        "surface-container": "#201f1f",
+                        "secondary-fixed-dim": "#c9c6c0",
+                        "surface-container-high": "#2a2a2a",
+                        "on-primary": "#680012",
+                        "secondary-container": "#474742",
+                        "on-tertiary-container": "#e8e8e8",
+                        "surface": "#131313",
+                        "on-secondary-fixed": "#1c1c18",
+                        "on-surface-variant": "#e2bebd",
+                        "surface-container-lowest": "#0e0e0e",
+                        "inverse-on-surface": "#313030",
+                        "inverse-primary": "#b71f30",
+                        "on-secondary": "#31312c",
+                        "on-secondary-container": "#b7b5af",
+                        "on-primary-fixed-variant": "#92001d",
+                        "on-tertiary": "#303030",
+                        "surface-bright": "#393939",
+                        "on-tertiary-fixed": "#1b1b1b",
+                        "tertiary": "#c6c6c6",
+                        "primary": "#ffb3b1",
+                        "tertiary-container": "#686868",
+                        "on-surface": "#e5e2e1",
+                        "error": "#ffb4ab",
+                        "tertiary-fixed": "#e2e2e2",
+                        "outline-variant": "#5a4040",
+                        "primary-fixed-dim": "#ffb3b1",
+                        "on-primary-container": "#ffe2e0",
+                        "surface-tint": "#ffb3b1",
+                        "primary-fixed": "#ffdad8",
+                        "on-error": "#690005",
+                        "background": "#131313",
+                        "surface-container-highest": "#353534",
+                        "secondary-fixed": "#e5e2db",
+                        "secondary": "#c9c6c0",
+                        "inverse-surface": "#e5e2e1",
+                        "tertiary-fixed-dim": "#c6c6c6",
+                        "surface-dim": "#131313",
+                        "primary-container": "#c52b39",
+                        "on-tertiary-fixed-variant": "#474747",
+                        "on-primary-fixed": "#410007",
+                        "on-secondary-fixed-variant": "#474742",
+                        "on-background": "#e5e2e1",
+                        "outline": "#a98988"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-lg": "32px",
+                        "gutter": "24px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "margin": "40px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["IBM Plex Sans"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-sm": ["IBM Plex Sans"],
+                        "display-lg": ["IBM Plex Sans"],
+                        "caption": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "label-mono": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-sm": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "caption": ["12px", { "lineHeight": "16px", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(18, 18, 18, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .glow-hover:hover {
+            box-shadow: 0 0 20px rgba(197, 43, 57, 0.2);
+            border-color: rgba(197, 43, 57, 0.5);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #e5e2e1 0%, #c6c6c6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .text-gradient-red {
+            background: linear-gradient(135deg, #c52b39 0%, #ffb3b1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased selection:bg-primary-container selection:text-white">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-white/5 shadow-2xl">
+<div class="flex justify-between items-center h-16 px-margin max-w-[1440px] mx-auto">
+<div class="flex items-center gap-stack-lg">
+<a class="font-headline-sm text-headline-sm text-primary dark:text-primary tracking-tighter font-bold" href="#">PROJECT ROAST</a>
+<div class="hidden md:flex items-center gap-stack-md">
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-primary transition-colors duration-200 font-headline-sm text-headline-sm font-headline-sm" href="#">Dashboard</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-primary transition-colors duration-200 font-headline-sm text-headline-sm font-headline-sm" href="#">History</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-primary transition-colors duration-200 font-headline-sm text-headline-sm font-headline-sm" href="#">Insights</a>
+</div>
+</div>
+<div class="flex items-center gap-stack-md">
+<button class="text-primary dark:text-primary hover:text-primary transition-colors duration-200 active:opacity-80 transition-opacity">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</div>
+</nav>
+<main class="pt-[120px] pb-margin px-margin max-w-[1440px] mx-auto">
+<!-- Hero Section -->
+<section class="flex flex-col lg:flex-row items-center justify-between gap-margin mb-[120px]">
+<div class="lg:w-1/2 flex flex-col gap-stack-lg z-10">
+<h1 class="font-display-lg text-display-lg text-gradient">
+                    Interrogate Your Trades with AI Precision
+                </h1>
+<p class="font-body-lg text-body-lg text-secondary max-w-xl">
+                    Deploy an analytical intelligence entity to dissect your financial data. Uncover hidden patterns, roast poor decisions, and optimize your portfolio with surgical accuracy.
+                </p>
+<div class="flex gap-stack-md mt-stack-sm">
+<button class="bg-primary-container text-white px-8 py-3 rounded hover:bg-inverse-primary transition-colors font-headline-sm text-headline-sm">
+                        Start Interrogation
+                    </button>
+<button class="border border-white/20 text-on-background px-8 py-3 rounded hover:bg-surface-container-high transition-colors font-headline-sm text-headline-sm">
+                        View Demo
+                    </button>
+</div>
+</div>
+<!-- Hero Interactive Element -->
+<div class="lg:w-1/2 relative w-full aspect-square max-w-[600px]">
+<div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(197,43,57,0.15)_0%,transparent_70%)] rounded-full blur-3xl"></div>
+<div class="glass-panel p-stack-lg rounded-xl absolute top-10 right-10 w-64 glow-hover transition-all duration-300 z-20 transform rotate-3">
+<div class="flex justify-between items-center mb-stack-md">
+<span class="font-label-mono text-label-mono text-secondary">AAPL / LONG</span>
+<span class="bg-error-container/20 border border-error-container text-error-container px-2 py-1 rounded text-caption font-label-mono">Flagged</span>
+</div>
+<div class="font-headline-md text-headline-md mb-unit">-14.2%</div>
+<div class="font-caption text-caption text-secondary">AI Verdict: Poor entry timing relative to macro indicators.</div>
+</div>
+<div class="glass-panel p-stack-lg rounded-xl absolute bottom-20 left-0 w-72 glow-hover transition-all duration-300 z-30 transform -rotate-2">
+<div class="flex justify-between items-center mb-stack-md">
+<span class="font-label-mono text-label-mono text-secondary">NVDA / SHORT</span>
+<span class="bg-primary-container/20 border border-primary-container text-primary-container px-2 py-1 rounded text-caption font-label-mono">Roast Complete</span>
+</div>
+<div class="font-headline-md text-headline-md text-primary-container mb-unit">+8.5%</div>
+<div class="font-caption text-caption text-secondary">AI Verdict: Solid thesis execution, premature exit.</div>
+</div>
+<!-- Abstract Data Vis Background -->
+<div class="absolute inset-0 z-10 opacity-30 flex items-center justify-center">
+<img alt="Abstract data visualization lines" class="w-full h-full object-cover rounded-full mix-blend-screen mask-image-[radial-gradient(ellipse_at_center,black,transparent)]" data-alt="A highly complex, abstract digital data visualization featuring glowing red and white lines intersecting on a deep black background. The image evokes a sense of high-frequency trading networks or artificial intelligence neural pathways. The lighting is dark and moody, typical of a high-end fintech dark-mode interface, with sharp, crisp technical details. The overall aesthetic is sophisticated, modern, and intensely analytical." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrPxZQSGCl6Hinj4yCOVQ-UImI2EIZoNW2YnzffcxQF_wFwqLiQ05SikhpK2rz_vqdHi-Z5dD1l9RTP5UHduHCruvFF65xczkTtLTKxiR-Ieyhv-285IUaodRWNPsWeR9gXOwOpE-IUlizzQlK2eVHDeYnPMP0DFm6dcv8cKHQsuRoLlndG2zJ7TNOAdJr8Vn9Vyye4JoBKoH8n6OGDRyuRir1tfGpsWmrvnXFEPmjHS29b-XprCoYPQNVZntcbmBup5mJWTXNeOmF"/>
+</div>
+</div>
+</section>
+<!-- Bento Grid Features -->
+<section class="mb-[120px]">
+<h2 class="font-headline-md text-headline-md mb-margin text-center">Architected for Alpha</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Large Feature -->
+<div class="md:col-span-2 glass-panel p-margin rounded-xl relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary-container/10 blur-3xl rounded-full transition-transform group-hover:scale-150 duration-700"></div>
+<span class="material-symbols-outlined text-4xl text-primary-container mb-stack-md relative z-10">psychology</span>
+<h3 class="font-headline-sm text-headline-sm mb-stack-sm relative z-10">Surgical Dissection</h3>
+<p class="font-body-md text-body-md text-secondary relative z-10 max-w-md">The Interrogator AI doesn't just show charts; it tears apart your trading logic, identifying cognitive biases and statistical anomalies with zero empathy.</p>
+</div>
+<!-- Small Feature 1 -->
+<div class="glass-panel p-margin rounded-xl group hover:border-white/20 transition-colors">
+<span class="material-symbols-outlined text-4xl text-secondary mb-stack-md">analytics</span>
+<h3 class="font-headline-sm text-headline-sm mb-stack-sm">Deep Forensics</h3>
+<p class="font-body-md text-body-md text-secondary">Post-trade analysis that digs into order flow dynamics and execution slippage.</p>
+</div>
+<!-- Small Feature 2 -->
+<div class="glass-panel p-margin rounded-xl group hover:border-white/20 transition-colors">
+<span class="material-symbols-outlined text-4xl text-secondary mb-stack-md">radar</span>
+<h3 class="font-headline-sm text-headline-sm mb-stack-sm">Live Monitoring</h3>
+<p class="font-body-md text-body-md text-secondary">Real-time alerts when your current portfolio begins to drift from historical norms.</p>
+</div>
+<!-- Medium Feature -->
+<div class="md:col-span-2 glass-panel p-margin rounded-xl flex items-center justify-between group hover:border-white/20 transition-colors">
+<div>
+<span class="material-symbols-outlined text-4xl text-secondary mb-stack-md">terminal</span>
+<h3 class="font-headline-sm text-headline-sm mb-stack-sm">Command Line Interface</h3>
+<p class="font-body-md text-body-md text-secondary max-w-sm">For the purists. Interrogate your data using raw commands for maximum speed and minimal UI overhead.</p>
+</div>
+<div class="hidden sm:block font-label-mono text-label-mono text-secondary bg-surface-container-highest p-stack-md rounded border border-white/5">
+                        &gt; roast analyze --ticker TSLA<br/>
+                        &gt; compiling parameters...<br/>
+                        &gt; warning: heavy bias detected
+                    </div>
+</div>
+</div>
+</section>
+</main>
+</body></html>
