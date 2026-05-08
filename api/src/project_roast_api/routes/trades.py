@@ -13,6 +13,10 @@ from project_roast_api.schemas import TradeOut, TradesPage
 from project_roast_api.security import Principal, get_principal
 from pydantic import BaseModel
 from typing import List
+import json
+from openai import AsyncOpenAI
+
+from project_roast_api.config import settings
 
 router = APIRouter(prefix="/v1/trades", tags=["trades"])
 
@@ -147,26 +151,60 @@ async def roast_trade(
     if not trade:
         raise HTTPException(status_code=404, detail="Trade not found")
         
-    # Mock AI insights for now until real AI integration
-    insights = []
-    
-    if trade.pnl is not None and trade.pnl < 0:
-        insights.append(InsightOut(
-            title="STOP-LOSS MISMANAGEMENT",
-            description="The hard stop was placed directly at a round number, a known liquidity pool. The algorithm notes you were stopped out by a minor over-shoot before the price reversed.",
-            details={
-                "Expected Drawdown": "1.5%",
-                "Actual Drawdown": "4.2%"
-            }
-        ))
-    else:
-        insights.append(InsightOut(
-            title="PREMATURE ENTRY",
-            description="You initiated the position before a scheduled macroeconomic event. This indicates a high-risk anticipation strategy rather than a reactive, confirmation-based entry.",
-            details={
-                "Volatility at Entry": "Elevated (84th percentile)",
-                "RSI (5m)": "42 (Neutral)"
-            }
-        ))
-        
-    return RoastOut(insights=insights)
+    # If no API key, return mock insights
+    if not settings.openai_api_key:
+        insights = []
+        if trade.pnl is not None and trade.pnl < 0:
+            insights.append(InsightOut(
+                title="STOP-LOSS MISMANAGEMENT",
+                description="The hard stop was placed directly at a round number, a known liquidity pool. The algorithm notes you were stopped out by a minor over-shoot before the price reversed.",
+                details={"Expected Drawdown": "1.5%", "Actual Drawdown": "4.2%"}
+            ))
+        else:
+            insights.append(InsightOut(
+                title="PREMATURE ENTRY",
+                description="You initiated the position before a scheduled macroeconomic event. This indicates a high-risk anticipation strategy rather than a reactive, confirmation-based entry.",
+                details={"Volatility at Entry": "Elevated (84th percentile)", "RSI (5m)": "42 (Neutral)"}
+            ))
+        return RoastOut(insights=insights)
+
+    # Call OpenAI
+    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    prompt = f"""
+You are the Interrogator, a brutal, analytical AI that roasts trading performance with zero empathy.
+Analyze this trade:
+Symbol: {trade.symbol}
+Side: {trade.side}
+Quantity: {trade.qty}
+Price: {trade.price}
+Fees: {trade.fees}
+PnL: {trade.pnl if trade.pnl is not None else 'Unknown'}
+Raw Data: {json.dumps(trade.raw) if trade.raw else 'None'}
+
+Return a JSON array of insights. Each insight must have:
+- "title": string (short, brutal, uppercase)
+- "description": string (the roast/analysis)
+- "details": object mapping string to string (metrics or evidence)
+
+Limit to 2 or 3 insights.
+"""
+    try:
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "system", "content": "You output strictly valid JSON."}, {"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+            temperature=0.7,
+        )
+        content = response.choices[0].message.content
+        if content:
+            data = json.loads(content)
+            # handle cases where the LLM might return {"insights": [...]} or just a list
+            raw_insights = data.get("insights", data) if isinstance(data, dict) else data
+            if isinstance(raw_insights, list):
+                insights = [InsightOut(**i) for i in raw_insights]
+                return RoastOut(insights=insights)
+    except Exception as e:
+        print("Error calling OpenAI:", e)
+
+    # Fallback to mock on error
+    return RoastOut(insights=[InsightOut(title="ANALYSIS FAILED", description="The AI engine could not process this trade.", details={"Error": "OpenAI API failed"})])

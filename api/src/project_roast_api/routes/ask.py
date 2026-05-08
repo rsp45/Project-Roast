@@ -9,11 +9,15 @@ from project_roast_api.db import get_db
 from project_roast_api.models import AiQuery, Trade
 from project_roast_api.schemas import AskRequest, AskResponse
 from project_roast_api.security import Principal, get_principal
+from project_roast_api.config import settings
+from openai import AsyncOpenAI
+import json
 
 router = APIRouter(prefix="/v1", tags=["ask"])
 
 
 def basic_answer(question: str, pnls: list[float]) -> str:
+    # Just used as a fallback if OpenAI is not configured or fails
     q = question.lower()
     if "win rate" in q:
         if not pnls:
@@ -32,6 +36,40 @@ def basic_answer(question: str, pnls: list[float]) -> str:
         return "Drawdown analysis is available on the Portfolio page once PnL series is imported."
     return "I can answer questions once trades are imported. Ask about PnL, win rate, fees, symbols, or clustering."
 
+async def get_ai_answer(question: str, trades: list[dict], context: str | None) -> dict:
+    if not settings.openai_api_key:
+        return {"answer": basic_answer(question, [t["pnl"] for t in trades if t["pnl"] is not None]), "followUps": ["Show me PnL by symbol.", "Compare last 30 days vs previous 30 days."]}
+    
+    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    prompt = f"""
+You are the Interrogator AI. You analyze trading data and answer the user's questions brutally and honestly.
+User Question: {question}
+Additional Context: {context}
+
+Here are the user's latest 50 trades (or fewer):
+{json.dumps(trades, indent=2)}
+
+Respond with a JSON object:
+{{
+    "answer": "Your detailed answer",
+    "followUps": ["follow up question 1", "follow up question 2"]
+}}
+"""
+    try:
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "system", "content": "You output strictly valid JSON."}, {"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+            temperature=0.7,
+        )
+        content = response.choices[0].message.content
+        if content:
+            return json.loads(content)
+    except Exception as e:
+        print("Error calling OpenAI:", e)
+
+    return {"answer": basic_answer(question, [t["pnl"] for t in trades if t["pnl"] is not None]), "followUps": ["Show me PnL by symbol.", "Compare last 30 days vs previous 30 days."]}
+
 
 @router.post("/ask", response_model=AskResponse)
 async def ask(
@@ -48,8 +86,7 @@ async def ask(
         )
     ).scalars().all()
 
-    pnls = [float(t.pnl) for t in trades if t.pnl is not None]
-    answer = basic_answer(req.question, pnls)
+    # we moved pnls processing below or into get_ai_answer
 
     evidence_trades = [
         {
@@ -62,8 +99,12 @@ async def ask(
             "fees": float(t.fees),
             "pnl": float(t.pnl) if t.pnl is not None else None,
         }
-        for t in trades[:10]
+        for t in trades
     ]
+    
+    ai_resp = await get_ai_answer(req.question, evidence_trades, req.context)
+    answer = ai_resp.get("answer", "No answer provided.")
+    followUps = ai_resp.get("followUps", [])
 
     query = AiQuery(
         id=uuid.uuid4(),
@@ -80,9 +121,5 @@ async def ask(
     return AskResponse(
         answer=answer,
         evidence={"trades": evidence_trades},
-        followUps=[
-            "Show me PnL by symbol.",
-            "Which trades contributed most to drawdown?",
-            "Compare last 30 days vs previous 30 days.",
-        ],
+        followUps=followUps,
     )

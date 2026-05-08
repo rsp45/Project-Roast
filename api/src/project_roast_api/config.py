@@ -32,5 +32,6 @@ class Settings(BaseSettings):
     google_client_id: str
     web_origin: str = "http://localhost:3000"
 
+    openai_api_key: str | None = None
 
 settings = Settings()
