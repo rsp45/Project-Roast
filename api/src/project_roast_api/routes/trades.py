@@ -152,7 +152,7 @@ async def roast_trade(
         raise HTTPException(status_code=404, detail="Trade not found")
         
     # If no API key, return mock insights
-    if not settings.openai_api_key:
+    if not settings.nvidia_api_key:
         insights = []
         if trade.pnl is not None and trade.pnl < 0:
             insights.append(InsightOut(
@@ -168,8 +168,11 @@ async def roast_trade(
             ))
         return RoastOut(insights=insights)
 
-    # Call OpenAI
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    # Call NVIDIA API
+    client = AsyncOpenAI(
+        base_url="https://integrate.api.nvidia.com/v1",
+        api_key=settings.nvidia_api_key
+    )
     prompt = f"""
 You are the Interrogator, a brutal, analytical AI that roasts trading performance with zero empathy.
 Analyze this trade:
@@ -190,14 +193,20 @@ Limit to 2 or 3 insights.
 """
     try:
         response = await client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="qwen/qwen3-coder-480b-a35b-instruct",
             messages=[{"role": "system", "content": "You output strictly valid JSON."}, {"role": "user", "content": prompt}],
-            response_format={"type": "json_object"},
             temperature=0.7,
+            top_p=0.8,
+            max_tokens=4096,
         )
         content = response.choices[0].message.content
         if content:
-            data = json.loads(content)
+            # Cleanup markdown block if present
+            if content.startswith("```json"):
+                content = content[7:]
+            if content.endswith("```"):
+                content = content[:-3]
+            data = json.loads(content.strip())
             # handle cases where the LLM might return {"insights": [...]} or just a list
             raw_insights = data.get("insights", data) if isinstance(data, dict) else data
             if isinstance(raw_insights, list):

@@ -37,10 +37,13 @@ def basic_answer(question: str, pnls: list[float]) -> str:
     return "I can answer questions once trades are imported. Ask about PnL, win rate, fees, symbols, or clustering."
 
 async def get_ai_answer(question: str, trades: list[dict], context: str | None) -> dict:
-    if not settings.openai_api_key:
+    if not settings.nvidia_api_key:
         return {"answer": basic_answer(question, [t["pnl"] for t in trades if t["pnl"] is not None]), "followUps": ["Show me PnL by symbol.", "Compare last 30 days vs previous 30 days."]}
     
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    client = AsyncOpenAI(
+        base_url="https://integrate.api.nvidia.com/v1",
+        api_key=settings.nvidia_api_key
+    )
     prompt = f"""
 You are the Interrogator AI. You analyze trading data and answer the user's questions brutally and honestly.
 User Question: {question}
@@ -57,14 +60,20 @@ Respond with a JSON object:
 """
     try:
         response = await client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="qwen/qwen3-coder-480b-a35b-instruct",
             messages=[{"role": "system", "content": "You output strictly valid JSON."}, {"role": "user", "content": prompt}],
-            response_format={"type": "json_object"},
             temperature=0.7,
+            top_p=0.8,
+            max_tokens=4096,
         )
         content = response.choices[0].message.content
         if content:
-            return json.loads(content)
+            # Cleanup markdown block if present
+            if content.startswith("```json"):
+                content = content[7:]
+            if content.endswith("```"):
+                content = content[:-3]
+            return json.loads(content.strip())
     except Exception as e:
         print("Error calling OpenAI:", e)
 

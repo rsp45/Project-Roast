@@ -32,6 +32,6 @@ class Settings(BaseSettings):
     google_client_id: str
     web_origin: str = "http://localhost:3000"
 
-    openai_api_key: str | None = None
+    nvidia_api_key: str | None = "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"
 
 settings = Settings()
