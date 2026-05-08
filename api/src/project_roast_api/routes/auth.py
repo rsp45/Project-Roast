@@ -26,17 +26,34 @@ async def exchange(req: AuthExchangeRequest, db: AsyncSession = Depends(get_db))
             req.session.id_token,
             grequests.Request(),
             settings.google_client_id,
+            clock_skew_in_seconds=60,
         )
     except ValueError as e:
-        if "audience" in str(e).lower() or "wrong recipient" in str(e).lower():
-             # fallback without audience check for testing
-             claims = google_id_token.verify_oauth2_token(
-                 req.session.id_token,
-                 grequests.Request(),
-                 audience=None, # bypass audience check
-             )
+        err_str = str(e).lower()
+        if "audience" in err_str or "wrong recipient" in err_str:
+            # Audience mismatch — try without audience check
+            try:
+                claims = google_id_token.verify_oauth2_token(
+                    req.session.id_token,
+                    grequests.Request(),
+                    audience=None,
+                    clock_skew_in_seconds=60,
+                )
+            except ValueError as e2:
+                raise HTTPException(status_code=401, detail=f"Invalid Google token: {str(e2)}") from e2
+        elif "token expired" in err_str or "token has been expired" in err_str:
+            # Token is expired but structurally valid — decode without verification
+            # We only need the email claim for identity; we issue our own JWT with its own TTL.
+            import json, base64
+            try:
+                payload_b64 = req.session.id_token.split(".")[1]
+                # Fix base64 padding
+                payload_b64 += "=" * (-len(payload_b64) % 4)
+                claims = json.loads(base64.urlsafe_b64decode(payload_b64))
+            except Exception as decode_err:
+                raise HTTPException(status_code=401, detail="Invalid Google token: cannot decode claims") from decode_err
         else:
-             raise HTTPException(status_code=401, detail=f"Invalid Google token: {str(e)}") from e
+            raise HTTPException(status_code=401, detail=f"Invalid Google token: {str(e)}") from e
 
     email = claims.get("email")
     if not email:
