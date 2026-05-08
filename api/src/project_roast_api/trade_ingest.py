@@ -16,21 +16,14 @@ def normalize_header(value: str | None) -> str:
 
 
 _COLUMN_ALIASES: dict[str, tuple[str, ...]] = {
-    "symbol": ("symbol", "ticker", "asset", "instrument"),
-    "price": ("price", "avg_price", "avgprice", "cost", "execution_price", "fill_price", "fillprice"),
-    "qty": ("qty", "quantity", "size", "shares", "amount", "units"),
+    "symbol": ("symbol", "ticker", "asset", "instrument", "stock", "name"),
+    "price": ("price", "avg_price", "avgprice", "cost", "execution_price", "fill_price", "fillprice",
+              "close", "close_last", "close-last", "closelast", "adj_close"),
+    "qty": ("qty", "quantity", "size", "shares", "amount", "units", "volume", "vol"),
     "side": ("side", "action", "type", "buy_sell", "buysell"),
     "executed_at": (
-        "executed_at",
-        "executedat",
-        "execution_time",
-        "executiontime",
-        "timestamp",
-        "datetime",
-        "date",
-        "time",
-        "trade_date",
-        "tradedate",
+        "executed_at", "executedat", "execution_time", "executiontime",
+        "timestamp", "datetime", "date", "time", "trade_date", "tradedate",
     ),
     "pnl": ("pnl", "profit", "realized_pnl", "return", "profit_loss", "profitloss"),
     "fees": ("fees", "fee", "commission", "commissions"),

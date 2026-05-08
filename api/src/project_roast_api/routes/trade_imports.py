@@ -32,7 +32,8 @@ async def create_trade_import(
 
     mapping = build_column_mapping(list(rows[0].keys()))
     missing: list[str] = []
-    for required in ("symbol", "side", "qty", "price"):
+    is_ohlcv = not mapping.get("symbol") and not mapping.get("side")
+    for required in ("qty", "price"):
         if not mapping.get(required):
             missing.append(required)
     timestamp_headers = {
@@ -80,6 +81,17 @@ async def create_trade_import(
             executed_at = resolve_timestamp(row_for_timestamp)
         except ValueError:
             continue
+
+        # OHLCV mode: infer symbol from filename, default side to BUY
+        if is_ohlcv:
+            base_name = (file.filename or "UNKNOWN").upper()
+            # Strip common extensions and path separators
+            inferred_symbol = base_name.replace(".CSV", "").replace(".TXT", "").split("/")[-1].split("\\")[-1]
+            # Remove trailing "data" or "stockdata" suffixes
+            import re as _re
+            inferred_symbol = _re.sub(r'(?i)(stock)?data$', '', inferred_symbol).strip() or "UNKNOWN"
+            mapped_row["symbol"] = inferred_symbol
+            mapped_row["side"] = "BUY"
         symbol = (mapped_row.get("symbol") or "").strip().upper()
         side = (mapped_row.get("side") or "").strip().upper()
         qty = parse_float(mapped_row.get("qty"))
