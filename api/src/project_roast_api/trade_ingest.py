@@ -87,6 +87,21 @@ def parse_timestamp(value: str) -> datetime:
 
 
 def resolve_timestamp(row: dict[str, str]) -> datetime:
+    date_keys = ("tradedate", "trade_date", "date", "settlementdate")
+    time_keys = ("executiontime", "execution_time", "time", "tradetime")
+
+    row_lower = {k.lower(): v for k, v in row.items()}
+
+    date_val = next((row_lower[k] for k in date_keys if k in row_lower and row_lower[k].strip()), None)
+    time_val = next((row_lower[k] for k in time_keys if k in row_lower and row_lower[k].strip()), None)
+
+    if date_val and time_val:
+        combined = f"{date_val.strip()} {time_val.strip()}"
+        try:
+            return parse_timestamp(combined)
+        except ValueError:
+            pass
+
     combined_keys = (
         "executed_at",
         "executedat",
@@ -100,19 +115,15 @@ def resolve_timestamp(row: dict[str, str]) -> datetime:
     for key in combined_keys:
         val = row.get(key, "").strip()
         if val:
+            if len(val) <= 10 and time_val:
+                try:
+                    return parse_timestamp(f"{val} {time_val.strip()}")
+                except ValueError:
+                    pass
             return parse_timestamp(val)
 
-    date_keys = ("tradedate", "trade_date", "date", "settlementdate")
-    time_keys = ("executiontime", "execution_time", "time", "tradetime")
-
-    row_lower = {k.lower(): v for k, v in row.items()}
-
-    date_val = next((row_lower[k] for k in date_keys if k in row_lower and row_lower[k].strip()), None)
-    time_val = next((row_lower[k] for k in time_keys if k in row_lower and row_lower[k].strip()), None)
-
     if date_val:
-        combined = f"{date_val.strip()} {time_val.strip()}" if time_val else date_val.strip()
-        return parse_timestamp(combined)
+        return parse_timestamp(date_val.strip())
 
     raise ValueError(f"No recognisable timestamp column in row: {list(row.keys())}")
 
