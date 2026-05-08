@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-/* ── Candlestick + Spark Canvas ────────────────────────────────── */
+/* ── Realistic Ember Spark Canvas ──────────────────────────────── */
 function RoastCanvas() {
   const ref = useRef<HTMLCanvasElement>(null);
 
@@ -12,129 +12,131 @@ function RoastCanvas() {
     const ctx = canvas.getContext("2d")!;
     let raf = 0;
 
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     resize();
     window.addEventListener("resize", resize);
 
-    // ── Spark particles ──────────────────────────────────────────
-    type Spark = { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; size: number; hue: number };
-    const sparks: Spark[] = [];
+    // Two particle types: streaks + bokeh orbs
+    type Streak = {
+      x: number; y: number; vx: number; vy: number;
+      life: number; maxLife: number;
+      size: number; hue: number; bright: number;
+      trail: { x: number; y: number }[];
+    };
+    type Orb = { x: number; y: number; vy: number; life: number; maxLife: number; r: number; hue: number; };
 
-    const makeSpark = (): Spark => ({
+    const streaks: Streak[] = [];
+    const orbs: Orb[] = [];
+
+    const makeStreak = (): Streak => {
+      const speed = Math.random() * 3 + 1.2;
+      const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.9;
+      return {
+        x: Math.random() * canvas.width,
+        y: canvas.height * (0.7 + Math.random() * 0.3),
+        vx: Math.cos(angle) * speed * 0.6,
+        vy: Math.sin(angle) * speed,
+        life: 0,
+        maxLife: Math.random() * 100 + 60,
+        size: Math.random() * 1.6 + 0.4,
+        hue: Math.random() * 35 + 15,   // 15–50: orange/amber/gold
+        bright: Math.random() * 20 + 60, // 60-80% lightness
+        trail: [],
+      };
+    };
+
+    const makeOrb = (): Orb => ({
       x: Math.random() * canvas.width,
-      y: canvas.height + 10,
-      vx: (Math.random() - 0.5) * 1.5,
-      vy: -(Math.random() * 2.5 + 1),
+      y: canvas.height * (0.6 + Math.random() * 0.4),
+      vy: -(Math.random() * 0.6 + 0.2),
       life: 0,
-      maxLife: Math.random() * 120 + 60,
-      size: Math.random() * 2.5 + 0.5,
-      hue: Math.random() * 40 + 10, // orange-red range
+      maxLife: Math.random() * 200 + 120,
+      r: Math.random() * 18 + 6,
+      hue: Math.random() * 30 + 10,
     });
 
-    for (let i = 0; i < 80; i++) {
-      const s = makeSpark();
-      s.y = Math.random() * canvas.height; // scatter initial
+    // Seed initial particles spread across screen
+    for (let i = 0; i < 160; i++) {
+      const s = makeStreak();
+      s.y = Math.random() * canvas.height;
       s.life = Math.random() * s.maxLife;
-      sparks.push(s);
+      streaks.push(s);
+    }
+    for (let i = 0; i < 18; i++) {
+      const o = makeOrb();
+      o.y = Math.random() * canvas.height;
+      o.life = Math.random() * o.maxLife;
+      orbs.push(o);
     }
 
-    // ── Candlestick data generation ──────────────────────────────
-    type Candle = { o: number; h: number; l: number; c: number };
-    const generateCandles = (count: number): Candle[] => {
-      const candles: Candle[] = [];
-      let price = 150;
-      for (let i = 0; i < count; i++) {
-        const change = (Math.random() - 0.48) * 8;
-        const o = price;
-        const c = price + change;
-        const h = Math.max(o, c) + Math.random() * 4;
-        const l = Math.min(o, c) - Math.random() * 4;
-        candles.push({ o, h, l, c });
-        price = c;
-      }
-      return candles;
-    };
-
-    const drawCandles = () => {
-      const W = canvas.width;
-      const H = canvas.height;
-      const count = Math.floor(W / 22);
-      const candles = generateCandles(count);
-      const allPrices = candles.flatMap((c) => [c.h, c.l]);
-      const minP = Math.min(...allPrices);
-      const maxP = Math.max(...allPrices);
-      const range = maxP - minP || 1;
-
-      const toY = (p: number) => H * 0.35 + ((maxP - p) / range) * (H * 0.45);
-      const cw = Math.floor(W / count) - 4;
-
-      candles.forEach((c, i) => {
-        const x = i * (W / count) + 4;
-        const isGreen = c.c >= c.o;
-        const baseAlpha = 0.12;
-
-        // Wick
-        ctx.beginPath();
-        ctx.moveTo(x + cw / 2, toY(c.h));
-        ctx.lineTo(x + cw / 2, toY(c.l));
-        ctx.strokeStyle = isGreen ? `rgba(16,185,129,${baseAlpha})` : `rgba(197,43,57,${baseAlpha})`;
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
-        // Body
-        ctx.fillStyle = isGreen ? `rgba(16,185,129,${baseAlpha * 1.5})` : `rgba(197,43,57,${baseAlpha * 1.5})`;
-        const y1 = toY(Math.max(c.o, c.c));
-        const y2 = toY(Math.min(c.o, c.c));
-        ctx.fillRect(x, y1, cw, Math.max(y2 - y1, 1));
-
-        // Roast glow on red candles
-        if (!isGreen) {
-          const grd = ctx.createLinearGradient(x, y1, x, y2);
-          grd.addColorStop(0, "rgba(255,80,0,0.06)");
-          grd.addColorStop(1, "rgba(255,30,0,0.02)");
-          ctx.fillStyle = grd;
-          ctx.fillRect(x - 1, y1 - 2, cw + 2, y2 - y1 + 4);
-        }
-      });
-    };
-
-    // Draw candles once (static for perf)
-    drawCandles();
-
-    // ── Animation loop (sparks only) ─────────────────────────────
     const animate = () => {
-      // Fade trail
-      ctx.fillStyle = "rgba(19,19,19,0.06)";
+      // Very slow fade — creates the dark smoky trail effect
+      ctx.fillStyle = "rgba(19,19,19,0.28)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      for (const s of sparks) {
-        s.x += s.vx + Math.sin(s.life * 0.08) * 0.4;
+      // Draw bokeh orbs
+      for (const o of orbs) {
+        o.y += o.vy;
+        o.x += Math.sin(o.life * 0.03) * 0.3;
+        o.life++;
+        if (o.life >= o.maxLife) { Object.assign(o, makeOrb()); continue; }
+        const t = o.life / o.maxLife;
+        const alpha = (t < 0.15 ? t / 0.15 : t > 0.7 ? (1 - t) / 0.3 : 1) * 0.18;
+        const grd = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.r);
+        grd.addColorStop(0, `hsla(${o.hue},100%,75%,${alpha * 1.4})`);
+        grd.addColorStop(0.4, `hsla(${o.hue},100%,55%,${alpha})`);
+        grd.addColorStop(1, `hsla(${o.hue},90%,30%,0)`);
+        ctx.beginPath();
+        ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
+        ctx.fillStyle = grd;
+        ctx.fill();
+      }
+
+      // Draw streaks
+      for (const s of streaks) {
+        // Turbulence
+        s.vx += (Math.random() - 0.5) * 0.12;
+        s.vy += (Math.random() - 0.5) * 0.08;
+        // Slight upward drift
+        s.vy = Math.min(s.vy, -0.3);
+        s.x += s.vx;
         s.y += s.vy;
         s.life++;
-        s.vy *= 0.995;
 
-        if (s.life >= s.maxLife) {
-          Object.assign(s, makeSpark());
-          continue;
-        }
+        if (s.life >= s.maxLife || s.y < -20) { Object.assign(s, makeStreak()); s.trail = []; continue; }
+
+        // Record trail
+        s.trail.push({ x: s.x, y: s.y });
+        if (s.trail.length > 12) s.trail.shift();
 
         const t = s.life / s.maxLife;
-        const alpha = t < 0.1 ? t * 10 : 1 - t;
-        const r = s.size * (1 - t * 0.5);
+        const alpha = t < 0.08 ? t / 0.08 : t > 0.6 ? (1 - t) / 0.4 : 1;
 
-        // Core ember
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${s.hue}, 100%, 70%, ${alpha * 0.9})`;
-        ctx.fill();
+        // Draw trail as tapered line
+        if (s.trail.length > 1) {
+          for (let i = 1; i < s.trail.length; i++) {
+            const tFade = i / s.trail.length;
+            const w = s.size * tFade * 1.5;
+            const a = alpha * tFade * 0.85;
+            ctx.beginPath();
+            ctx.moveTo(s.trail[i - 1].x, s.trail[i - 1].y);
+            ctx.lineTo(s.trail[i].x, s.trail[i].y);
+            ctx.strokeStyle = `hsla(${s.hue},100%,${s.bright}%,${a})`;
+            ctx.lineWidth = w;
+            ctx.lineCap = "round";
+            ctx.stroke();
+          }
+        }
 
-        // Outer glow
+        // Bright core ember dot
+        const grd = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.size * 4);
+        grd.addColorStop(0,   `hsla(60,100%,95%,${alpha * 0.9})`);
+        grd.addColorStop(0.2, `hsla(${s.hue + 20},100%,80%,${alpha * 0.8})`);
+        grd.addColorStop(0.6, `hsla(${s.hue},100%,55%,${alpha * 0.4})`);
+        grd.addColorStop(1,   `hsla(${s.hue},90%,30%,0)`);
         ctx.beginPath();
-        ctx.arc(s.x, s.y, r * 3, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${s.hue}, 100%, 50%, ${alpha * 0.15})`;
+        ctx.arc(s.x, s.y, s.size * 4, 0, Math.PI * 2);
+        ctx.fillStyle = grd;
         ctx.fill();
       }
 
@@ -142,18 +144,12 @@ function RoastCanvas() {
     };
 
     animate();
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", resize);
-    };
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
   }, []);
 
   return (
-    <canvas
-      ref={ref}
-      className="fixed inset-0 w-full h-full pointer-events-none z-0"
-      style={{ mixBlendMode: "screen" }}
-    />
+    <canvas ref={ref} className="fixed inset-0 w-full h-full pointer-events-none z-0"
+      style={{ mixBlendMode: "screen" }} />
   );
 }
 
@@ -221,13 +217,10 @@ export default function Home() {
     <div className="flex min-h-dvh flex-col bg-[#131313] text-on-background antialiased overflow-x-hidden">
       <style>{`
         .fire-text {
-          background-image: url('/fire-texture.png');
-          background-size: cover;
-          background-position: center;
+          background: linear-gradient(135deg, #ff6a00 0%, #ffb347 40%, #ff4500 100%);
           -webkit-background-clip: text;
           background-clip: text;
           -webkit-text-fill-color: transparent;
-          filter: brightness(1.3) saturate(1.4);
         }
         @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
         @keyframes floatA { 0%,100% { transform: translateY(0px) rotate(2deg); } 50% { transform: translateY(-16px) rotate(2deg); } }
