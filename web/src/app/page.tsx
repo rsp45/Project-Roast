@@ -16,7 +16,7 @@ export default function Home() {
             </Link>
             <div className="hidden md:flex items-center gap-stack-md">
               <Link
-                href="/app/dashboard"
+                href="/app/portfolio"
                 className="text-on-surface-variant dark:text-on-surface-variant hover:text-primary transition-colors duration-200 font-headline-sm text-headline-sm"
               >
                 Dashboard
