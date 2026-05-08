@@ -23,12 +23,20 @@ async def create_trade_import(
     principal: Principal = Depends(get_principal),
 ):
     if not file.filename or not file.filename.lower().endswith(".csv"):
-        raise HTTPException(status_code=400, detail="Only .csv files are supported")
+        raise HTTPException(status_code=400, detail={
+            "error_code": "INVALID_FILE_TYPE",
+            "message": "Only .csv files are supported",
+            "hint": "Make sure your file has a .csv extension. Excel files (.xlsx) must be saved as CSV first.",
+        })
 
     raw = await file.read()
     rows = read_csv_dicts(raw)
     if not rows:
-        raise HTTPException(status_code=400, detail="CSV is empty")
+        raise HTTPException(status_code=400, detail={
+            "error_code": "EMPTY_FILE",
+            "message": "The CSV file appears to be empty",
+            "hint": "Check that your file has at least a header row and one data row.",
+        })
 
     mapping = build_column_mapping(list(rows[0].keys()))
     missing: list[str] = []
@@ -37,24 +45,23 @@ async def create_trade_import(
         if not mapping.get(required):
             missing.append(required)
     timestamp_headers = {
-        "executed_at",
-        "executedat",
-        "execution_time",
-        "executiontime",
-        "datetime",
-        "timestamp",
-        "date",
-        "time",
-        "trade_date",
-        "tradedate",
+        "executed_at", "executedat", "execution_time", "executiontime",
+        "datetime", "timestamp", "date", "time", "trade_date", "tradedate",
     }
     if not any(h in rows[0] for h in timestamp_headers):
         missing.append("date")
     if missing:
-        found = ", ".join(sorted(rows[0].keys()))
+        found_cols = sorted(rows[0].keys())
         raise HTTPException(
             status_code=400,
-            detail=f"CSV missing required columns: {', '.join(sorted(set(missing)))}. Found: {found}",
+            detail={
+                "error_code": "MISSING_COLUMNS",
+                "message": f"CSV is missing required columns: {', '.join(sorted(set(missing)))}",
+                "hint": "Your CSV needs at minimum: a date/time column, a price column, and a quantity/volume column. "
+                        "Check the Settings → CSV Mapping page to configure your broker's column names.",
+                "found_columns": found_cols,
+                "missing_columns": sorted(set(missing)),
+            },
         )
 
     import_id = uuid.uuid4()
@@ -124,7 +131,12 @@ async def create_trade_import(
         trade_import.status = "failed"
         trade_import.error = "No valid trades found in CSV"
         await db.commit()
-        raise HTTPException(status_code=400, detail="No valid trades found in CSV")
+        raise HTTPException(status_code=400, detail={
+            "error_code": "NO_VALID_TRADES",
+            "message": "No valid trade rows could be parsed from your CSV",
+            "hint": "Rows are skipped if symbol, side, price, or quantity are missing or zero. "
+                    "Check that your CSV has data rows and that the column mapping in Settings matches your broker's format.",
+        })
 
     db.add_all(trades)
 

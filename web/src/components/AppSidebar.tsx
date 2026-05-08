@@ -13,6 +13,7 @@ const navItems = [
   { href: "/app/upload", label: "Upload", icon: "upload" },
   { href: "/app/backtests", label: "Backtests", icon: "flask" },
   { href: "/app/settings", label: "Settings", icon: "settings" },
+  { href: "/app/about", label: "How It Works", icon: "info" },
 ] as const;
 
 export function AppSidebar({ userName, userEmail, userImage }: { userName?: string; userEmail?: string; userImage?: string | null }) {
