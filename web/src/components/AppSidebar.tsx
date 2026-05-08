@@ -15,7 +15,7 @@ const navItems = [
   { href: "/app/settings", label: "Settings", icon: "settings" },
 ] as const;
 
-export function AppSidebar({ userName, userEmail }: { userName?: string; userEmail?: string }) {
+export function AppSidebar({ userName, userEmail, userImage }: { userName?: string; userEmail?: string; userImage?: string | null }) {
   const pathname = usePathname();
 
   return (
@@ -33,8 +33,12 @@ export function AppSidebar({ userName, userEmail }: { userName?: string; userEma
         <div className="mb-stack-lg px-4">
           <div className="font-headline-sm text-headline-sm text-primary mb-stack-sm tracking-tighter font-bold">PROJECT ROAST</div>
           <div className="flex items-center gap-stack-sm mt-stack-md">
-            <div className="w-10 h-10 rounded-full bg-surface-variant overflow-hidden shrink-0 flex items-center justify-center">
-               <span className="material-symbols-outlined text-on-surface">person</span>
+            <div className="w-10 h-10 rounded-full bg-surface-variant overflow-hidden shrink-0 flex items-center justify-center border border-white/10">
+               {userImage ? (
+                 <img src={userImage} alt={userName || "User"} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+               ) : (
+                 <span className="material-symbols-outlined text-on-surface">person</span>
+               )}
             </div>
             <div className="min-w-0">
               <div className="font-body-md text-body-md text-on-surface font-semibold truncate">{userName || "The Interrogator"}</div>

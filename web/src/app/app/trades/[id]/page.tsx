@@ -1,11 +1,49 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowLeft, AlertCircle, CheckCircle, Eye, Brain } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { backendFetch } from "@/lib/backend";
+
+type Trade = {
+  id: string;
+  executedAt: string;
+  symbol: string;
+  side: string;
+  qty: number;
+  price: number;
+  fees: number;
+  pnl: number | null;
+};
+
+type Insight = {
+  title: string;
+  description: string;
+  details: Record<string, string>;
+};
+
+type RoastData = {
+  insights: Insight[];
+};
 
 export default function TradeDetailPage({
   params,
 }: {
   params: { id: string };
 }) {
+  const q = useQuery({
+    queryKey: ["trade", params.id],
+    queryFn: () => backendFetch<Trade>(`/v1/trades/${params.id}`),
+  });
+
+  const rq = useQuery({
+    queryKey: ["trade-roast", params.id],
+    queryFn: () => backendFetch<RoastData>(`/v1/trades/${params.id}/roast`),
+  });
+
+  const trade = q.data;
+  const roast = rq.data;
+
   return (
     <div className="flex flex-col w-full">
       {/* Header */}
@@ -24,7 +62,16 @@ export default function TradeDetailPage({
             </span>
           </div>
           <h1 className="font-display-lg text-display-lg text-on-surface">
-            NVDA Short <span className="text-tertiary">@ 124.50</span>
+            {q.isLoading ? (
+              <span className="animate-pulse bg-white/10 rounded h-10 w-48 block"></span>
+            ) : trade ? (
+              <>
+                {trade.symbol} {trade.side === "SHORT" || trade.side === "SELL" ? "Short" : "Long"}{" "}
+                <span className="text-tertiary">@ {trade.price.toFixed(2)}</span>
+              </>
+            ) : (
+              "Trade Not Found"
+            )}
           </h1>
         </div>
         <div className="flex items-center gap-stack-md">
@@ -76,15 +123,13 @@ export default function TradeDetailPage({
                 <polyline fill="none" points="70,95 80,70 100,65" stroke="rgba(255,255,255,0.4)" strokeWidth="0.5"></polyline>
               </svg>
               {/* Entry/Exit Markers */}
-              <div className="absolute left-[40%] top-[60%] -translate-y-1/2 flex flex-col items-center">
-                <div className="w-3 h-3 rounded-full bg-on-surface border-2 border-surface z-20"></div>
-                <div className="h-full w-px border-l border-dashed border-white/20 absolute top-3"></div>
-                <div className="absolute -top-8 bg-surface border border-white/10 px-2 py-1 rounded font-label-mono text-[10px] text-on-surface whitespace-nowrap">ENTRY: 124.50</div>
-              </div>
-              <div className="absolute left-[70%] top-[95%] -translate-y-1/2 flex flex-col items-center">
-                <div className="w-3 h-3 rounded-full bg-primary-container border-2 border-surface z-20"></div>
-                <div className="absolute -bottom-8 bg-surface border border-error-container/50 px-2 py-1 rounded font-label-mono text-[10px] text-primary whitespace-nowrap">EXIT: 132.20</div>
-              </div>
+              {trade && (
+                <div className="absolute left-[40%] top-[60%] -translate-y-1/2 flex flex-col items-center">
+                  <div className="w-3 h-3 rounded-full bg-on-surface border-2 border-surface z-20"></div>
+                  <div className="h-full w-px border-l border-dashed border-white/20 absolute top-3"></div>
+                  <div className="absolute -top-8 bg-surface border border-white/10 px-2 py-1 rounded font-label-mono text-[10px] text-on-surface whitespace-nowrap">ENTRY: {trade.price.toFixed(2)}</div>
+                </div>
+              )}
             </div>
           </section>
 
@@ -92,24 +137,49 @@ export default function TradeDetailPage({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-gutter">
             <div className="bg-surface-container-lowest border border-white/5 hover:border-white/15 transition-colors rounded-lg p-stack-md flex flex-col justify-between">
               <div className="font-label-mono text-caption text-secondary mb-2">P&L (REALIZED)</div>
-              <div className="font-headline-md text-headline-md text-primary tracking-tighter">-$4,250.00</div>
-              <div className="mt-2 font-caption text-caption text-error-container bg-error-container/10 inline-block px-2 py-0.5 rounded border border-error-container/20 w-fit">
-                -6.18%
-              </div>
+              {q.isLoading ? (
+                <div className="animate-pulse bg-white/10 rounded h-8 w-24"></div>
+              ) : trade ? (
+                <>
+                  <div className={`font-headline-md text-headline-md tracking-tighter ${trade.pnl && trade.pnl >= 0 ? "text-emerald-400" : trade.pnl ? "text-primary" : "text-on-surface"}`}>
+                    {trade.pnl !== null ? `${trade.pnl >= 0 ? "+" : ""}$${trade.pnl.toFixed(2)}` : "—"}
+                  </div>
+                </>
+              ) : (
+                <div className="text-secondary">—</div>
+              )}
             </div>
             <div className="bg-surface-container-lowest border border-white/5 hover:border-white/15 transition-colors rounded-lg p-stack-md flex flex-col justify-between">
-              <div className="font-label-mono text-caption text-secondary mb-2">RISK/REWARD RATIO</div>
-              <div className="font-headline-md text-headline-md text-on-surface tracking-tighter">1 : 0.4</div>
-              <div className="mt-2 font-caption text-caption text-secondary border border-white/5 inline-block px-2 py-0.5 rounded w-fit bg-surface">
-                Sub-optimal
-              </div>
+              <div className="font-label-mono text-caption text-secondary mb-2">QTY / FEES</div>
+              {q.isLoading ? (
+                <div className="animate-pulse bg-white/10 rounded h-8 w-24"></div>
+              ) : trade ? (
+                <>
+                  <div className="font-headline-md text-headline-md text-on-surface tracking-tighter">{trade.qty}</div>
+                  <div className="mt-2 font-caption text-caption text-secondary border border-white/5 inline-block px-2 py-0.5 rounded w-fit bg-surface">
+                    Fees: ${trade.fees.toFixed(2)}
+                  </div>
+                </>
+              ) : (
+                <div className="text-secondary">—</div>
+              )}
             </div>
             <div className="bg-surface-container-lowest border border-white/5 hover:border-white/15 transition-colors rounded-lg p-stack-md flex flex-col justify-between">
-              <div className="font-label-mono text-caption text-secondary mb-2">HOLD DURATION</div>
-              <div className="font-headline-md text-headline-md text-on-surface tracking-tighter">4h 12m</div>
-              <div className="mt-2 font-caption text-caption text-secondary border border-white/5 inline-block px-2 py-0.5 rounded w-fit bg-surface">
-                Intraday
-              </div>
+              <div className="font-label-mono text-caption text-secondary mb-2">TIME</div>
+              {q.isLoading ? (
+                <div className="animate-pulse bg-white/10 rounded h-8 w-24"></div>
+              ) : trade ? (
+                <>
+                  <div className="font-headline-md text-headline-md text-on-surface tracking-tighter">
+                    {new Date(trade.executedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                  <div className="mt-2 font-caption text-caption text-secondary border border-white/5 inline-block px-2 py-0.5 rounded w-fit bg-surface">
+                    {new Date(trade.executedAt).toLocaleDateString()}
+                  </div>
+                </>
+              ) : (
+                <div className="text-secondary">—</div>
+              )}
             </div>
           </div>
         </div>
@@ -130,40 +200,37 @@ export default function TradeDetailPage({
             </div>
             
             <div className="flex-1 p-stack-md overflow-y-auto space-y-stack-lg">
-              {/* Insight 1 */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary-container"></div>
-                  <h3 className="font-label-mono text-[14px] text-primary">PREMATURE ENTRY</h3>
+              {rq.isLoading ? (
+                <div className="animate-pulse space-y-4">
+                  <div className="h-4 bg-white/10 rounded w-1/3"></div>
+                  <div className="h-16 bg-white/10 rounded w-full"></div>
+                  <div className="h-12 bg-white/10 rounded w-full"></div>
                 </div>
-                <p className="font-body-md text-[15px] leading-relaxed text-on-surface-variant mb-3">
-                  You initiated the short position exactly 14 minutes before the scheduled FOMC minutes release. This indicates a high-risk anticipation strategy rather than a reactive, confirmation-based entry.
-                </p>
-                <div className="bg-black/50 border border-white/5 rounded p-3 font-label-mono text-[12px] text-secondary">
-                  <div className="flex justify-between mb-1">
-                    <span>Volatility at Entry:</span>
-                    <span className="text-primary">Elevated (84th percentile)</span>
+              ) : roast?.insights && roast.insights.length > 0 ? (
+                roast.insights.map((insight, idx) => (
+                  <div key={idx}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary-container"></div>
+                      <h3 className="font-label-mono text-[14px] text-primary uppercase">{insight.title}</h3>
+                    </div>
+                    <p className="font-body-md text-[15px] leading-relaxed text-on-surface-variant mb-3">
+                      {insight.description}
+                    </p>
+                    {Object.keys(insight.details).length > 0 && (
+                      <div className="bg-black/50 border border-white/5 rounded p-3 font-label-mono text-[12px] text-secondary">
+                        {Object.entries(insight.details).map(([key, value]) => (
+                          <div key={key} className="flex justify-between mb-1 last:mb-0">
+                            <span>{key}:</span>
+                            <span className="text-on-surface">{value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex justify-between">
-                    <span>RSI (5m):</span>
-                    <span className="text-on-surface">42 (Neutral)</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Insight 2 */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary-container"></div>
-                  <h3 className="font-label-mono text-[14px] text-primary">STOP-LOSS MISMANAGEMENT</h3>
-                </div>
-                <p className="font-body-md text-[15px] leading-relaxed text-on-surface-variant mb-3">
-                  The hard stop was placed directly at the round number (132.00), a known liquidity pool. The algorithm notes you were stopped out by a 0.20 over-shoot before the price reversed 4% in your intended direction.
-                </p>
-                <button className="w-full py-2 border border-white/10 rounded bg-surface hover:bg-surface-container-high transition-colors font-label-mono text-[12px] text-on-surface flex items-center justify-center gap-2">
-                  <Eye className="h-4 w-4" /> View Liquidity Heatmap
-                </button>
-              </div>
+                ))
+              ) : (
+                <p className="text-secondary font-body-md">No insights available.</p>
+              )}
             </div>
             
             <div className="p-stack-md border-t border-white/5 bg-surface-container-low/50 mt-auto">

@@ -18,10 +18,11 @@ export default async function AppLayout({
 
   const userName = session.user?.name ?? "The Interrogator";
   const userEmail = session.user?.email ?? "AI Active";
+  const userImage = session.user?.image;
 
   return (
     <div className="flex min-h-screen bg-background text-on-background font-body-md overflow-hidden">
-      <AppSidebar userName={userName} userEmail={userEmail} />
+      <AppSidebar userName={userName} userEmail={userEmail} userImage={userImage} />
       
       {/* Main Content */}
       <main className="flex-1 md:ml-[280px] h-screen overflow-y-auto pt-16 md:pt-0 bg-background relative">

@@ -11,6 +11,8 @@ from project_roast_api.db import get_db
 from project_roast_api.models import Trade
 from project_roast_api.schemas import TradeOut, TradesPage
 from project_roast_api.security import Principal, get_principal
+from pydantic import BaseModel
+from typing import List
 
 router = APIRouter(prefix="/v1/trades", tags=["trades"])
 
@@ -95,3 +97,76 @@ async def list_trades(
     ]
 
     return TradesPage(items=items, nextCursor=next_cursor)
+
+
+@router.get("/{trade_id}", response_model=TradeOut)
+async def get_trade(
+    trade_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    principal: Principal = Depends(get_principal),
+):
+    stmt = select(Trade).where(
+        and_(Trade.id == trade_id, Trade.workspace_id == principal.workspace_id)
+    )
+    trade = (await db.execute(stmt)).scalar_one_or_none()
+    
+    if not trade:
+        raise HTTPException(status_code=404, detail="Trade not found")
+        
+    return TradeOut(
+        id=trade.id,
+        executedAt=trade.executed_at,
+        symbol=trade.symbol,
+        side=trade.side,
+        qty=float(trade.qty),
+        price=float(trade.price),
+        fees=float(trade.fees),
+        pnl=float(trade.pnl) if trade.pnl is not None else None,
+    )
+
+class InsightOut(BaseModel):
+    title: str
+    description: str
+    details: dict[str, str]
+
+class RoastOut(BaseModel):
+    insights: List[InsightOut]
+
+@router.get("/{trade_id}/roast", response_model=RoastOut)
+async def roast_trade(
+    trade_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    principal: Principal = Depends(get_principal),
+):
+    # Retrieve the trade to ensure it exists and belongs to the user
+    stmt = select(Trade).where(
+        and_(Trade.id == trade_id, Trade.workspace_id == principal.workspace_id)
+    )
+    trade = (await db.execute(stmt)).scalar_one_or_none()
+    
+    if not trade:
+        raise HTTPException(status_code=404, detail="Trade not found")
+        
+    # Mock AI insights for now until real AI integration
+    insights = []
+    
+    if trade.pnl is not None and trade.pnl < 0:
+        insights.append(InsightOut(
+            title="STOP-LOSS MISMANAGEMENT",
+            description="The hard stop was placed directly at a round number, a known liquidity pool. The algorithm notes you were stopped out by a minor over-shoot before the price reversed.",
+            details={
+                "Expected Drawdown": "1.5%",
+                "Actual Drawdown": "4.2%"
+            }
+        ))
+    else:
+        insights.append(InsightOut(
+            title="PREMATURE ENTRY",
+            description="You initiated the position before a scheduled macroeconomic event. This indicates a high-risk anticipation strategy rather than a reactive, confirmation-based entry.",
+            details={
+                "Volatility at Entry": "Elevated (84th percentile)",
+                "RSI (5m)": "42 (Neutral)"
+            }
+        ))
+        
+    return RoastOut(insights=insights)

@@ -2,14 +2,14 @@ import { AskPanel } from "./AskPanel";
 
 export default function AskPage() {
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <div className="flex flex-col w-full gap-stack-lg">
       <div>
-        <div className="font-[var(--font-display)] text-3xl tracking-tight">
+        <h1 className="font-display-lg text-display-lg text-on-surface tracking-tight mb-2">
           Ask AI
-        </div>
-        <div className="mt-1 text-sm text-muted">
+        </h1>
+        <p className="text-secondary font-body-md">
           Natural-language queries with evidence you can trace to rows.
-        </div>
+        </p>
       </div>
       <AskPanel />
     </div>

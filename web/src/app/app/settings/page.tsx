@@ -1,3 +1,5 @@
+import { CSVMappingUI } from "./CSVMappingUI";
+
 export default function SettingsPage() {
   return (
     <div className="flex flex-col w-full gap-stack-lg">
@@ -32,19 +34,8 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="glass-panel rounded-xl p-stack-md relative overflow-hidden border border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col">
-          <div className="font-headline-sm text-[18px] text-on-surface mb-1">CSV Templates</div>
-          <div className="text-[14px] text-secondary font-body-md mb-stack-md">
-            Define column mappings once, reuse across imports.
-          </div>
-          <div className="mt-auto bg-surface-container-low/50 border border-white/5 rounded p-4">
-            <div className="font-label-mono text-[11px] font-semibold tracking-wide text-primary uppercase mb-2">
-              Coming next
-            </div>
-            <div className="font-body-md text-[14px] text-on-surface-variant">
-              Upload a sample CSV and save a mapping preset.
-            </div>
-          </div>
+        <div className="glass-panel rounded-xl p-stack-md relative overflow-hidden border border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex flex-col h-[500px]">
+          <CSVMappingUI />
         </div>
       </section>
     </div>
